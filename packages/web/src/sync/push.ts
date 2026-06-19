@@ -10,10 +10,20 @@ export interface PushResult {
   failed: number;
   relationshipsCreated: number;
   relationshipsFailed: number;
+  errors: string[];
 }
 
 export async function pushModel(store: ModelStore, api: Api = defaultApi): Promise<PushResult> {
-  const res: PushResult = { created: 0, updated: 0, failed: 0, relationshipsCreated: 0, relationshipsFailed: 0 };
+  const res: PushResult = { created: 0, updated: 0, failed: 0, relationshipsCreated: 0, relationshipsFailed: 0, errors: [] };
+
+  const storageId = store.get().storageId;
+  if (!storageId) {
+    const pending = store.get().nodes.filter(n => n.status !== "created");
+    pending.forEach(n => store.updateNode(n.key, { status: "error", error: "No storage selected" }));
+    res.failed = pending.length;
+    res.errors.push("No storage selected — pick a storage in the top bar before pushing.");
+    return res;
+  }
 
   // ── 1. Create pending marts ────────────────────────────────────────────────
   for (const n of store.get().nodes) {
@@ -21,15 +31,17 @@ export async function pushModel(store: ModelStore, api: Api = defaultApi): Promi
     store.updateNode(n.key, { status: "creating", error: null });
     try {
       // Minimal create: only { title, storageId } is required; schema is optional.
-      const body: Record<string, unknown> = { title: n.title, storageId: store.get().storageId };
+      const body: Record<string, unknown> = { title: n.title, storageId };
       if (n.description) body.description = n.description;
       if (n.schema.length) body.schema = { fields: n.schema.map(f => ({ name: f.name, type: f.type, isPrimaryKey: f.pk })) };
       const out = await api<{ id: string }>("/api/data-marts", { method: "POST", body: JSON.stringify(body) });
       store.updateNode(n.key, { status: "created", owoxId: out.id, createdAt: new Date().toISOString() });
       res.created++;
     } catch (e) {
-      store.updateNode(n.key, { status: "error", error: (e as Error).message });
+      const msg = (e as Error).message;
+      store.updateNode(n.key, { status: "error", error: msg });
       res.failed++;
+      res.errors.push(`"${n.title}": ${msg}`);
     }
   }
 
@@ -50,7 +62,12 @@ export async function pushModel(store: ModelStore, api: Api = defaultApi): Promi
       const fromId = owoxIdByKey.get(fromKey);
       const toId = owoxIdByKey.get(toKey);
       // Skip until both ends exist in OWOX and at least one complete join key is set.
-      if (!fromId || !toId || ks.length === 0) { res.relationshipsFailed++; continue; }
+      if (!fromId || !toId || ks.length === 0) {
+        res.relationshipsFailed++;
+        const why = ks.length === 0 ? "join keys are empty" : "both marts must be created first";
+        res.errors.push(`Link ${titleByKey.get(fromKey)} → ${titleByKey.get(toKey)}: ${why}`);
+        continue;
+      }
       try {
         await api(`/api/data-marts/${fromId}/relationships`, {
           method: "POST",
@@ -61,8 +78,9 @@ export async function pushModel(store: ModelStore, api: Api = defaultApi): Promi
           }),
         });
         res.relationshipsCreated++;
-      } catch {
+      } catch (e) {
         res.relationshipsFailed++;
+        res.errors.push(`Link ${titleByKey.get(fromKey)} → ${titleByKey.get(toKey)}: ${(e as Error).message}`);
       }
     }
   }

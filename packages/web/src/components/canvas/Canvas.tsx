@@ -20,12 +20,13 @@ import "@xyflow/react/dist/style.css";
 import "./canvas.css";
 
 import dagre from "@dagrejs/dagre";
+import { X } from "lucide-react";
 
 import { createModelStore } from "../../state/model";
 import type { ModelNode, ModelEdge, ModelGraph } from "@mc/okf";
 
 import { graphToBundleFiles, downloadBundle } from "../../okf/io";
-import { pushModel } from "../../sync/push";
+import { pushModel, type PushResult } from "../../sync/push";
 
 import { api } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -58,6 +59,8 @@ function toRFEdge(e: ModelEdge): Edge {
     id: e.id,
     source: e.from,
     target: e.to,
+    sourceHandle: e.sourceHandle ?? undefined,
+    targetHandle: e.targetHandle ?? undefined,
     type: "rel",
     data: { keys: e.keys, bidirectional: e.bidirectional } as unknown as Record<string, unknown>,
   };
@@ -100,7 +103,8 @@ function CanvasInner() {
   const [tool, setTool] = useState<Tool>("select");
   const [showImport, setShowImport] = useState(false);
   const [showLibrary, setShowLibrary] = useState(false);
-  const [pushStatus, setPushStatus] = useState<string | null>(null);
+  const [pushing, setPushing] = useState(false);
+  const [pushResult, setPushResult] = useState<PushResult | null>(null);
   const [storages, setStorages] = useState<StorageOption[]>([]);
 
   // Load the project's storages once; default the model to the first one so a
@@ -136,7 +140,7 @@ function CanvasInner() {
   // ── Connect handler ────────────────────────────────────────────────────────
   const onConnect = useCallback((connection: Connection) => {
     if (!connection.source || !connection.target) return;
-    store.addEdge(connection.source, connection.target);
+    store.addEdge(connection.source, connection.target, connection.sourceHandle, connection.targetHandle);
   }, []);
 
   // ── Pane click → add (in Add tool) or deselect ────────────────────────────
@@ -217,14 +221,15 @@ function CanvasInner() {
   }, []);
 
   const handlePush = useCallback(async () => {
-    setPushStatus("Pushing…");
+    setPushResult(null);
+    setPushing(true);
     try {
       const result = await pushModel(store);
-      setPushStatus(`Done: ${result.created} created, ${result.failed} failed`);
-      setTimeout(() => setPushStatus(null), 4000);
+      setPushResult(result);
     } catch (e) {
-      setPushStatus(`Error: ${(e as Error).message}`);
-      setTimeout(() => setPushStatus(null), 4000);
+      setPushResult({ created: 0, updated: 0, failed: 0, relationshipsCreated: 0, relationshipsFailed: 0, errors: [(e as Error).message] });
+    } finally {
+      setPushing(false);
     }
   }, []);
 
@@ -253,10 +258,13 @@ function CanvasInner() {
         onPush={() => { void handlePush(); }}
         onLibrary={() => setShowLibrary(true)}
       />
-      {pushStatus && (
+      {pushing && (
         <div className="fixed bottom-4 right-4 z-50 bg-slate-900 text-white text-[13px] px-4 py-2 rounded-lg shadow-lg">
-          {pushStatus}
+          Pushing to OWOX…
         </div>
+      )}
+      {!pushing && pushResult && (
+        <PushToast result={pushResult} onClose={() => setPushResult(null)} />
       )}
       {showImport && (
         <ImportDialog
@@ -332,6 +340,33 @@ function CanvasInner() {
           onClose={() => setSelection(null)}
         />
       </div>
+    </div>
+  );
+}
+
+// ── Push result toast (sticky — dismissed by the user, not on a timer) ─────────
+function PushToast({ result, onClose }: { result: PushResult; onClose: () => void }) {
+  const hasFailures = result.failed > 0 || result.relationshipsFailed > 0;
+  const summary = `${result.created} mart${result.created === 1 ? "" : "s"} created`
+    + (result.relationshipsCreated ? `, ${result.relationshipsCreated} link${result.relationshipsCreated === 1 ? "" : "s"} created` : "")
+    + (hasFailures ? `, ${result.failed + result.relationshipsFailed} failed` : "");
+  return (
+    <div className={`fixed bottom-4 right-4 z-50 w-[420px] max-h-[60vh] overflow-y-auto rounded-xl shadow-2xl border text-[13px] ${hasFailures ? "bg-white border-red-300" : "bg-white border-emerald-300"}`}>
+      <div className="flex items-start gap-2 px-4 py-3 border-b border-slate-100">
+        <span className={`mt-[2px] h-2 w-2 rounded-full flex-shrink-0 ${hasFailures ? "bg-red-500" : "bg-emerald-500"}`} />
+        <div className="flex-1 font-semibold text-slate-800">
+          {hasFailures ? "Push completed with errors" : "Push complete"}
+          <div className="font-normal text-slate-500 text-[12px] mt-0.5">{summary}</div>
+        </div>
+        <button onClick={onClose} className="text-slate-400 hover:text-slate-700" title="Dismiss"><X size={16} /></button>
+      </div>
+      {result.errors.length > 0 && (
+        <ul className="px-4 py-2 flex flex-col gap-1.5">
+          {result.errors.map((err, i) => (
+            <li key={i} className="text-[12px] text-red-600 leading-snug break-words font-mono">{err}</li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

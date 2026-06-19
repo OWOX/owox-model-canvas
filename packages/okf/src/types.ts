@@ -23,6 +23,9 @@ export interface ModelEdge {
   to: string;
   keys: JoinKey[];
   bidirectional: boolean;
+  // Canvas-only hints for which ports the edge attaches to (not encoded in OKF).
+  sourceHandle?: string | null;
+  targetHandle?: string | null;
 }
 export interface ModelGraph {
   storageId: string | null;

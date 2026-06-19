@@ -14,12 +14,12 @@ export function createModelStore(initial?: Partial<ModelGraph>) {
     },
     updateNode(key: string, patch: Partial<ModelNode>) { g = { ...g, nodes: g.nodes.map(n => n.key === key ? { ...n, ...patch } : n) }; emit(); },
     removeNode(key: string) { g = { ...g, nodes: g.nodes.filter(n => n.key !== key), edges: g.edges.filter(e => e.from !== key && e.to !== key) }; emit(); },
-    addEdge(from: string, to: string): ModelEdge | null {
+    addEdge(from: string, to: string, sourceHandle?: string | null, targetHandle?: string | null): ModelEdge | null {
       if (from === to) return null;
       const pair = [from, to].sort().join("|");
       const existing = g.edges.find(e => [e.from, e.to].sort().join("|") === pair);
       if (existing) { g = { ...g, edges: g.edges.map(e => e === existing ? { ...e, bidirectional: true } : e) }; emit(); return existing; }
-      const e: ModelEdge = { id: uid("e"), from, to, keys: [{ left: "", right: "" }], bidirectional: false };
+      const e: ModelEdge = { id: uid("e"), from, to, keys: [{ left: "", right: "" }], bidirectional: false, sourceHandle, targetHandle };
       g = { ...g, edges: [...g.edges, e] }; emit(); return e;
     },
     updateEdge(id: string, patch: Partial<ModelEdge>) { g = { ...g, edges: g.edges.map(e => e.id === id ? { ...e, ...patch } : e) }; emit(); },
