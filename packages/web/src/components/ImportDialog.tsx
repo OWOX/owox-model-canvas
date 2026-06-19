@@ -75,6 +75,15 @@ export function ImportDialog({ onConfirm, onClose }: ImportDialogProps) {
           </button>
         </div>
 
+        <a
+          href="/ai-instructions.html"
+          target="_blank"
+          rel="noopener"
+          className="text-[13px] text-indigo-600 hover:text-indigo-700 underline underline-offset-2 -mt-1"
+        >
+          Instructions for AI — how to generate an OKF model ↗
+        </a>
+
         {/* File upload */}
         <div>
           <label className="block text-[13px] font-medium text-slate-700 mb-1">

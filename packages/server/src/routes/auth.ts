@@ -9,7 +9,7 @@ export async function authRoutes(app: FastifyInstance) {
       const token = await client.exchangeToken(parts);
       const info = client.decodeProjectFromToken(token);
       const sid = createSession({ origin: parts.apiOrigin, token, keyId: parts.apiKeyId, projectTitle: info.projectTitle, fullName: info.fullName });
-      reply.setCookie("mc_sid", sid, { httpOnly: true, sameSite: "lax", path: "/" });
+      reply.setCookie("mc_sid", sid, { httpOnly: true, sameSite: "lax", path: "/", secure: process.env.NODE_ENV === "production" });
       return { projectTitle: info.projectTitle, fullName: info.fullName };
     } catch (e) { return reply.code(400).send({ error: (e as Error).message }); }
   });

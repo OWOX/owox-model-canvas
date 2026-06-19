@@ -55,6 +55,10 @@ export async function pushModel(store: ModelStore, api: Api = defaultApi, storag
       if (n.description) {
         await api(`/api/data-marts/${out.id}/description`, { method: "PUT", body: JSON.stringify({ description: n.description }) }).catch(() => {});
       }
+      // Best-effort: push the optional source definition (format unconfirmed → swallow).
+      if (n.definition && n.definition.trim()) {
+        await api(`/api/data-marts/${out.id}/definition`, { method: "PUT", body: JSON.stringify({ definition: n.definition }) }).catch(() => {});
+      }
       // Push the output schema (fields + types + PK). Best-effort: a schema error
       // doesn't fail the mart itself, but it's surfaced in the result.
       const fields = n.schema.filter(f => f.name.trim());

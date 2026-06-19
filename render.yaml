@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: owox-model-canvas
+    runtime: node
+    plan: starter
+    # corepack provides pnpm (version pinned via package.json "packageManager")
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
+    startCommand: pnpm --filter @mc/server start
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production

@@ -51,6 +51,7 @@ export class OwoxClient {
   createDataMart(input: CreateDataMartInput) { return this.json<{ id: string }>("POST", "/api/data-marts", input); }
   updateTitle(id: string, title: string) { return this.json("PUT", `/api/data-marts/${id}/title`, { title }); }
   updateDescription(id: string, description: string) { return this.json("PUT", `/api/data-marts/${id}/description`, { description }); }
+  updateDefinition(id: string, body: unknown) { return this.json("PUT", `/api/data-marts/${id}/definition`, body); }
   // body is the storage-specific envelope: { schema: { type, fields:[...] } }
   updateSchema(id: string, body: unknown) { return this.json("PUT", `/api/data-marts/${id}/schema`, body); }
   deleteDataMart(id: string) { return this.json("DELETE", `/api/data-marts/${id}`); }

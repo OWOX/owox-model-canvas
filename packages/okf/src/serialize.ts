@@ -25,6 +25,9 @@ function renderNode(n: ModelNode, g: ModelGraph, slugByKey: Map<string, string>)
     ? "\n## Schema\n\n| Column | Type | PK |\n|--------|------|----|\n" +
       n.schema.map(f => `| \`${f.name}\` | ${f.type} | ${f.pk ? "✓" : ""} |`).join("\n") + "\n"
     : "";
+  const definition = n.definition && n.definition.trim()
+    ? `\n## Definition\n\n\`\`\`${n.inputSource === "SQL" ? "sql" : "text"}\n${n.definition.trim()}\n\`\`\`\n`
+    : "";
   const outgoing = g.edges.filter(e => e.from === n.key || (e.bidirectional && e.to === n.key));
   const joins = outgoing.length
     ? "\n## Joins\n\n" + outgoing.map(e => {
@@ -35,5 +38,5 @@ function renderNode(n: ModelNode, g: ModelGraph, slugByKey: Map<string, string>)
         return `- [${other.title}](./${slugByKey.get(otherKey)}.md) — ${cond}`;
       }).join("\n") + "\n"
     : "";
-  return `---\n${fm}\n---\n\n# ${n.title}\n${n.description ? "\n" + n.description + "\n" : ""}${schema}${joins}`;
+  return `---\n${fm}\n---\n\n# ${n.title}\n${n.description ? "\n" + n.description + "\n" : ""}${schema}${definition}${joins}`;
 }

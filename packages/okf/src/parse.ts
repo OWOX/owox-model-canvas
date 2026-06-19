@@ -13,7 +13,7 @@ export function parseBundle(files: Record<string, string>): ModelGraph {
     slugToKey.set(fileSlug, key);
     nodes.push({
       key, title, inputSource: (owox.inputSource || "SQL") as InputSource,
-      description: data.description || undefined, schema: parseSchema(body),
+      description: data.description || undefined, definition: parseDefinition(body), schema: parseSchema(body),
       position: owox.position || { x: 0, y: 0 },
       status: owox.id ? "created" : "pending", owoxId: owox.id ?? null,
     });
@@ -52,4 +52,10 @@ function parseSchema(body: string): { name: string; type: string; pk: boolean }[
     if (inSchema && m && m[1] !== "Column") out.push({ name: m[1], type: m[2], pk: !!m[3] });
   }
   return out;
+}
+
+// Extract the fenced code block under a "## Definition" heading, if present.
+function parseDefinition(body: string): string | null {
+  const m = body.match(/^##?\s+Definition\s*\n+```[^\n]*\n([\s\S]*?)\n```/im);
+  return m ? m[1].trim() : null;
 }

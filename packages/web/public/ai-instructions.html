@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OWOX Model Canvas — OKF authoring guide for AI agents</title>
+<style>
+  :root { --ink:#0f172a; --muted:#64748b; --line:#e2e8f0; --accent:#4f46e5; --bg:#f7f8fa; --code-bg:#0f172a; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif; line-height:1.6; }
+  .wrap { max-width:840px; margin:0 auto; padding:48px 24px 96px; }
+  header { display:flex; align-items:center; gap:12px; margin-bottom:8px; }
+  header .logo { width:30px; height:30px; }
+  h1 { font-size:26px; margin:0; letter-spacing:-0.3px; }
+  .lead { color:var(--muted); font-size:15px; margin:6px 0 32px; }
+  h2 { font-size:19px; margin:36px 0 10px; padding-top:18px; border-top:1px solid var(--line); }
+  h3 { font-size:15px; margin:22px 0 6px; }
+  p, li { font-size:14.5px; }
+  code { background:#eef1f5; padding:1px 5px; border-radius:4px; font-size:13px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+  pre { background:var(--code-bg); color:#e2e8f0; padding:16px 18px; border-radius:10px; overflow-x:auto;
+    font-size:12.5px; line-height:1.5; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+  pre code { background:none; padding:0; color:inherit; }
+  table { border-collapse:collapse; width:100%; font-size:13.5px; margin:10px 0; }
+  th, td { border:1px solid var(--line); padding:7px 10px; text-align:left; }
+  th { background:#fff; }
+  a { color:var(--accent); }
+  .note { background:#eef0fe; border:1px solid #c7d2fe; border-radius:10px; padding:12px 16px; font-size:13.5px; margin:14px 0; }
+  .chip { display:inline-block; background:#fff; border:1px solid var(--line); border-radius:6px; padding:1px 7px; font-size:12px; margin:2px 3px 2px 0; font-family:ui-monospace,monospace; }
+  footer { margin-top:48px; color:var(--muted); font-size:13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <svg class="logo" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M421.311 119.85C435.258 133.807 440.996 157.327 440.996 157.327C440.996 157.327 449.53 204.69 449.53 268.995C449.53 177.972 418.65 162.348 311.314 162.348H212.327C157.38 162.348 161.097 217.57 157.38 243.85L152.865 283.556C150.697 325.33 157.951 351.215 200.811 351.215C111.444 351.215 61.806 365.847 61.8062 239.866C61.8061 182.846 70.4043 157.327 70.4043 157.327C70.4043 157.327 76.1419 133.807 90.1183 119.85C104.095 105.877 124.809 104.475 124.809 104.475C124.809 104.475 167.579 98.0374 252.066 98.0374C336.554 98.0374 384.285 104.475 384.285 104.475C384.285 104.475 407.321 105.877 421.311 119.85Z" fill="#1E88E5"/><path d="M449.515 271.888C449.52 273.026 449.523 274.174 449.523 275.333C449.523 329.946 441.393 351.201 441.393 351.201C441.393 351.201 435.03 376.952 424.167 388.075C406.929 405.725 388.495 406.71 388.495 406.71C388.495 406.71 348.836 413.061 263.502 413.061C181.632 413.061 127.111 406.749 127.111 406.749C127.111 406.749 104.091 405.337 90.1144 391.377C76.1379 377.394 70.4004 351.201 70.4004 351.201C70.4004 351.201 61.8062 297.401 61.8062 238.506C61.806 352.055 102.131 351.374 175.525 350.133C183.56 349.998 191.992 349.855 200.811 349.855H299.787C343.122 349.855 352.906 318.315 354.792 282.196L359.32 227.093C360.526 204.443 357.608 188.362 350.507 178.012C342.765 166.722 329.575 160.987 311.314 160.987C424.974 160.987 448.73 176.216 449.515 271.888Z" fill="#0046F9"/></svg>
+    <h1>OWOX Model Canvas — OKF authoring guide</h1>
+  </header>
+  <p class="lead">Instructions for an AI agent (Claude, Codex, Gemini, …) to generate a data model in <b>OKF</b> that imports cleanly into OWOX Model Canvas and pushes to OWOX Data Marts in one click.</p>
+
+  <div class="note">
+    <b>Goal.</b> Produce one or more Markdown documents in the format below. The user pastes or uploads them into <b>Import OKF</b> on the canvas, reviews the rendered graph, then clicks <b>Push to OWOX</b> to create draft Data Marts and joinable relationships.
+  </div>
+
+  <h2>1. What is OKF</h2>
+  <p><b>Open Knowledge Format (OKF)</b> is a vendor-neutral way to represent metadata as a directory of Markdown files with YAML frontmatter. Reference: <a href="https://github.com/GoogleCloudPlatform/knowledge-catalog" target="_blank" rel="noopener">github.com/GoogleCloudPlatform/knowledge-catalog</a> (see the <code>okf/</code> spec). This canvas uses a small <b>authoring profile</b> of OKF: one concept document per Data Mart, plus an <code>owox:</code> frontmatter block and a <code>## Joins</code> section that the canvas understands.</p>
+
+  <h2>2. Bundle structure</h2>
+  <p>A model is a set of Markdown files — one per Data Mart. You may output them as separate files, or as a single pasted document where each file is preceded by a marker comment:</p>
+  <pre><code>&lt;!-- ecommerce/customers.md --&gt;
+---
+...frontmatter...
+---
+# Customers
+...
+
+&lt;!-- ecommerce/orders.md --&gt;
+---
+...frontmatter...
+---
+# Orders
+...</code></pre>
+  <p>When pasting, the <code>&lt;!-- path/file.md --&gt;</code> markers separate documents. When uploading, just provide one <code>.md</code> file per Data Mart.</p>
+
+  <h2>3. Anatomy of a Data Mart document</h2>
+  <pre><code>---
+type: "OWOX Data Mart"
+title: "Orders"
+description: "One row per order"
+tags: ["owox", "view"]
+timestamp: 2026-06-19T10:00:00Z
+owox:
+  key: orders                 # local id used to wire relationships (unique in the model)
+  inputSource: VIEW           # SQL | CONNECTOR | VIEW | TABLE  (default SQL)
+  storageId: ""               # leave empty — the canvas sets the selected storage
+  status: DRAFT
+  id: null                    # leave null — filled after Push
+  position: { x: 0, y: 0 }    # optional; the canvas auto-lays-out on import
+---
+
+# Orders
+
+One row per order, used for revenue and retention.
+
+## Schema
+
+| Column | Type | PK |
+|--------|------|----|
+| `id` | STRING | ✓ |
+| `customer_id` | STRING | |
+| `order_date` | DATE | |
+| `total` | FLOAT | |
+
+## Definition
+
+```sql
+SELECT id, customer_id, order_date, total FROM `project.dataset.orders`
+```
+
+## Joins
+
+- [Customers](./customers.md) — `customer_id = id`</code></pre>
+
+  <h3>Frontmatter fields</h3>
+  <ul>
+    <li><code>type</code> — always <code>"OWOX Data Mart"</code>.</li>
+    <li><code>title</code> — human title (shown on the node).</li>
+    <li><code>description</code> — one-line summary (optional).</li>
+    <li><code>owox.key</code> — a short stable local id (e.g. <code>orders</code>); relationships reference it. Must be unique within the model.</li>
+    <li><code>owox.inputSource</code> — one of <span class="chip">SQL</span><span class="chip">CONNECTOR</span><span class="chip">VIEW</span><span class="chip">TABLE</span>. Defaults to <code>SQL</code>.</li>
+    <li><code>owox.storageId</code> — leave empty; the canvas applies the storage the user selects (one storage per model).</li>
+    <li><code>owox.position</code> — optional; omit or <code>{ x: 0, y: 0 }</code> — the canvas auto-arranges.</li>
+  </ul>
+
+  <h2>4. Output schema (fields)</h2>
+  <p>Define the mart's columns in a <code>## Schema</code> table: <code>Column</code>, <code>Type</code>, <code>PK</code> (put <code>✓</code> for primary keys). These are pushed to the Data Mart's output schema.</p>
+  <p><b>Allowed types</b> (cross-storage canonical set — do not use others like <code>DATETIME</code>):</p>
+  <p><span class="chip">STRING</span><span class="chip">INTEGER</span><span class="chip">FLOAT</span><span class="chip">NUMERIC</span><span class="chip">BOOLEAN</span><span class="chip">DATE</span><span class="chip">TIME</span><span class="chip">TIMESTAMP</span><span class="chip">BYTES</span><span class="chip">GEOGRAPHY</span><span class="chip">VARIANT</span></p>
+
+  <h2>5. Definition (optional)</h2>
+  <p>Optionally include a <code>## Definition</code> fenced code block: a SQL query for <code>SQL</code>/<code>VIEW</code> marts, or a table reference (<code>project.dataset.table</code>) for <code>TABLE</code> marts. Use a <code>```sql</code> fence for SQL. Omit it for connector-based marts.</p>
+
+  <h2>6. Relationships (Joins)</h2>
+  <p>Declare joinable relationships in a <code>## Joins</code> section on the <b>source</b> mart. Each line links to the target document and states the join condition:</p>
+  <pre><code>## Joins
+
+- [Customers](./customers.md) — `customer_id = id`
+- [Products](./products.md) — `product_id = id`</code></pre>
+  <ul>
+    <li>Format: <code>- [Target Title](./target-slug.md) — `leftField = rightField`</code>. Multiple keys: comma-separate the backticked pairs.</li>
+    <li>The filename slug is the target title lowercased with spaces → hyphens (e.g. <code>Order Items</code> → <code>order-items.md</code>).</li>
+    <li>Join fields should exist in both marts' <code>## Schema</code>. If they don't, the canvas auto-adds them (as <code>STRING</code>) — but it's cleaner to define them.</li>
+    <li><b>Bidirectional</b> relationship: add a matching Joins line in <i>both</i> documents (with the key sides swapped). The canvas renders it as a double-headed arrow.</li>
+  </ul>
+
+  <h2>7. Complete minimal example</h2>
+  <pre><code>&lt;!-- shop/customers.md --&gt;
+---
+type: "OWOX Data Mart"
+title: "Customers"
+tags: ["owox", "view"]
+owox:
+  key: customers
+  inputSource: VIEW
+---
+# Customers
+## Schema
+| Column | Type | PK |
+|--------|------|----|
+| `id` | STRING | ✓ |
+| `email` | STRING | |
+
+&lt;!-- shop/orders.md --&gt;
+---
+type: "OWOX Data Mart"
+title: "Orders"
+tags: ["owox", "view"]
+owox:
+  key: orders
+  inputSource: VIEW
+---
+# Orders
+## Schema
+| Column | Type | PK |
+|--------|------|----|
+| `id` | STRING | ✓ |
+| `customer_id` | STRING | |
+## Joins
+- [Customers](./customers.md) — `customer_id = id`</code></pre>
+
+  <h2>8. Workflow</h2>
+  <ol>
+    <li>Generate the documents above for the user's domain.</li>
+    <li>User opens <b>Import OKF</b>, pastes the documents (with <code>&lt;!-- path --&gt;</code> markers) or uploads the <code>.md</code> files, clicks <b>Import</b>.</li>
+    <li>The canvas renders nodes + relationships; the user reviews and tweaks.</li>
+    <li>User picks a <b>Storage</b> and clicks <b>Push to OWOX</b> → draft Data Marts, output schemas and joinable relationships are created in the OWOX project.</li>
+  </ol>
+
+  <div class="note">
+    <b>Rules of thumb.</b> One storage per model. Keep <code>owox.key</code> unique and stable. Use only the allowed schema types. Reference real fields in joins. Leave <code>storageId</code>/<code>id</code> empty — the canvas fills them.
+  </div>
+
+  <footer>OWOX Model Canvas · OKF authoring profile. Built on the Open Knowledge Format.</footer>
+</div>
+</body>
+</html>

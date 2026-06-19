@@ -9,6 +9,7 @@ export interface ModelNode {
   title: string;
   inputSource: InputSource;
   description?: string;
+  definition?: string | null;   // optional source definition (SQL / table ref / view)
   schema: SchemaField[];
   position: { x: number; y: number };
   status: NodeStatus;

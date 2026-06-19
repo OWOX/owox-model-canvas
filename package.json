@@ -8,6 +8,9 @@
     "serve": "lsof -ti:3111 | xargs kill -9 2>/dev/null; pnpm build && PORT=3111 pnpm --filter @mc/server start",
     "test": "pnpm -r test"
   },
+  "engines": {
+    "node": ">=20"
+  },
   "devDependencies": {
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"
