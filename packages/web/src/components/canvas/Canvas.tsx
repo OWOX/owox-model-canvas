@@ -138,10 +138,17 @@ function CanvasInner() {
     store.addEdge(connection.source, connection.target);
   }, []);
 
-  // ── Pane click → deselect ─────────────────────────────────────────────────
-  const onPaneClick = useCallback(() => {
+  // ── Pane click → add (in Add tool) or deselect ────────────────────────────
+  const onPaneClick = useCallback((e: React.MouseEvent) => {
+    if (tool === "add") {
+      const pos = screenToFlowPosition({ x: e.clientX, y: e.clientY });
+      const n = store.addNode({ x: pos.x - NODE_W / 2, y: pos.y - NODE_H / 2 });
+      setSelection({ type: "node", id: n.key });
+      setTool("select");
+      return;
+    }
     setSelection(null);
-  }, []);
+  }, [tool, screenToFlowPosition]);
 
   // ── Node click → select ────────────────────────────────────────────────────
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
@@ -291,6 +298,7 @@ function CanvasInner() {
             selectNodesOnDrag={false}
             panOnDrag={tool === "select"}
             zoomOnScroll={true}
+            zoomOnDoubleClick={false}
             deleteKeyCode={null}
           >
             <Background variant={BackgroundVariant.Dots} gap={22} size={1.3} color="#e2e6ec" />
