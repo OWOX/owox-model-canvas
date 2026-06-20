@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { api } from "./api";
-interface Me { projectTitle?: string; fullName?: string; }
+export interface Me { projectTitle?: string; fullName?: string; }
 interface AuthCtx { me: Me | null; ready: boolean; connect: (key: string) => Promise<void>; signOut: () => Promise<void>; }
 const Ctx = createContext<AuthCtx>(null!);
 export const useAuth = () => useContext(Ctx);
