@@ -1,5 +1,4 @@
 import { Download, Upload } from "lucide-react";
-import { useAuth } from "../lib/auth";
 import { ProjectIcon, StorageIcon, LibraryIcon } from "../lib/icons";
 
 export interface StorageOption { id: string; title: string; type: string; }
@@ -13,6 +12,10 @@ export interface TopBarProps {
   onExport?: () => void;
   onPush?: () => void;
   onLibrary?: () => void;
+  signedIn: boolean;
+  projectTitle?: string;
+  onSignIn?: () => void;
+  onSignOut?: () => void;
 }
 
 const LOGO = (
@@ -38,8 +41,11 @@ const LOGO = (
   </svg>
 );
 
-export function TopBar({ pendingCount = 0, storages = [], storageId, onStorageChange, onImport, onExport, onPush, onLibrary }: TopBarProps) {
-  const { me, signOut } = useAuth();
+export function TopBar({
+  pendingCount = 0, storages = [], storageId, onStorageChange,
+  onImport, onExport, onPush, onLibrary,
+  signedIn, projectTitle, onSignIn, onSignOut,
+}: TopBarProps) {
 
   return (
     <div className="flex items-center gap-3 px-4 py-[9px] bg-white border-b border-[#d8dee8] flex-shrink-0 z-30">
@@ -50,22 +56,26 @@ export function TopBar({ pendingCount = 0, storages = [], storageId, onStorageCh
       </div>
 
       {/* Project picker chip */}
-      <button className="flex items-center gap-[7px] text-[13px] text-slate-500 border border-[#d8dee8] rounded-lg px-[10px] py-[5px] bg-white cursor-pointer hover:bg-[#f1f3f7]">
-        <ProjectIcon size={14} /> Project: <span className="text-slate-900 font-semibold">{me?.projectTitle ?? "—"}</span> ▾
-      </button>
+      {signedIn && (
+        <button className="flex items-center gap-[7px] text-[13px] text-slate-500 border border-[#d8dee8] rounded-lg px-[10px] py-[5px] bg-white cursor-pointer hover:bg-[#f1f3f7]">
+          <ProjectIcon size={14} /> Project: <span className="text-slate-900 font-semibold">{projectTitle ?? "—"}</span> ▾
+        </button>
+      )}
 
       {/* Storage picker — one storage per model (joinable requires same storage) */}
-      <label className="flex items-center gap-[7px] text-[13px] text-slate-500 border border-[#d8dee8] rounded-lg px-[10px] py-[5px] bg-white" title="One storage per model — joinable relationships require all marts on the same storage">
-        <StorageIcon size={14} /> Storage:
-        <select
-          value={storageId ?? ""}
-          onChange={e => onStorageChange?.(e.target.value)}
-          className="text-slate-900 font-semibold bg-white outline-none cursor-pointer"
-        >
-          {storages.length === 0 && <option value="">—</option>}
-          {storages.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
-        </select>
-      </label>
+      {signedIn && (
+        <label className="flex items-center gap-[7px] text-[13px] text-slate-500 border border-[#d8dee8] rounded-lg px-[10px] py-[5px] bg-white" title="One storage per model — joinable relationships require all marts on the same storage">
+          <StorageIcon size={14} /> Storage:
+          <select
+            value={storageId ?? ""}
+            onChange={e => onStorageChange?.(e.target.value)}
+            className="text-slate-900 font-semibold bg-white outline-none cursor-pointer"
+          >
+            {storages.length === 0 && <option value="">—</option>}
+            {storages.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
+          </select>
+        </label>
+      )}
 
       <div className="flex-1" />
 
@@ -105,13 +115,21 @@ export function TopBar({ pendingCount = 0, storages = [], storageId, onStorageCh
         Push to OWOX{pendingCount > 0 && <span className="opacity-80">({pendingCount})</span>}
       </button>
 
-      {/* Sign out */}
-      <button
-        onClick={signOut}
-        className="text-[13px] font-[550] border border-[#d8dee8] bg-white text-slate-900 rounded-lg px-3 py-[7px] cursor-pointer hover:bg-[#f1f3f7]"
-      >
-        Sign out
-      </button>
+      {signedIn ? (
+        <button
+          onClick={onSignOut}
+          className="text-[13px] font-[550] border border-[#d8dee8] bg-white text-slate-900 rounded-lg px-3 py-[7px] cursor-pointer hover:bg-[#f1f3f7]"
+        >
+          Sign out
+        </button>
+      ) : (
+        <button
+          onClick={onSignIn}
+          className="text-[13px] font-[550] border border-[#d8dee8] bg-white text-slate-900 rounded-lg px-3 py-[7px] cursor-pointer hover:bg-[#f1f3f7]"
+        >
+          Sign in
+        </button>
+      )}
     </div>
   );
 }
