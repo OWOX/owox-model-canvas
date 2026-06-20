@@ -35,7 +35,7 @@ export function SignInModal({ mode, connect, onConnected, onClose }: SignInModal
         className="w-[520px] max-h-[88vh] overflow-y-auto rounded-2xl border border-[#d8dee8] bg-white p-7 shadow-xl"
         onClick={e => e.stopPropagation()}
       >
-        <h1 className="text-lg font-semibold">Sign in to push</h1>
+        <h1 className="text-lg font-semibold">{mode === "push" ? "Sign in to push" : "Connect to OWOX"}</h1>
         <p className="mt-2 text-[13px] leading-relaxed text-slate-500">
           {mode === "push"
             ? "Pushing creates draft Data Marts in your OWOX project, so it needs your OWOX API key."

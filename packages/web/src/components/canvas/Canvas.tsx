@@ -343,7 +343,13 @@ function CanvasInner() {
             const mode = signIn.mode;
             setSignIn(null);
             const list = await loadStorages();
-            if (mode === "push") await runPush(list);
+            if (mode === "push") {
+              if (list.length === 0) {
+                setPushResult({ created: 0, updated: 0, failed: 0, relationshipsCreated: 0, relationshipsFailed: 0, errors: ["Couldn't load your OWOX storages — please try Push again."] });
+                return;
+              }
+              await runPush(list);
+            }
           }}
           onClose={() => setSignIn(null)}
         />
