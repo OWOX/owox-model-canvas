@@ -168,12 +168,17 @@ function CanvasInner() {
   // ── Connect handler ────────────────────────────────────────────────────────
   // Drag an existing edge end onto another port/node to re-route it (for a tidy picture).
   const onReconnect = useCallback((oldEdge: Edge, conn: Connection) => {
+    // ERD view is display-only: its edges carry synthetic "<modelEdgeId>::<n>"
+    // ids (one per join key) that don't map 1:1 to a model edge, so
+    // store.updateEdge(oldEdge.id, …) would match nothing and silently no-op.
+    // Disable reconnection entirely in this mode rather than ship that no-op.
+    if (viewMode === "erd") return;
     if (!conn.source || !conn.target || conn.source === conn.target) return;
     store.updateEdge(oldEdge.id, {
       from: conn.source, to: conn.target,
       sourceHandle: conn.sourceHandle, targetHandle: conn.targetHandle,
     });
-  }, []);
+  }, [viewMode]);
 
   const onConnect = useCallback((connection: Connection) => {
     if (!connection.source || !connection.target) return;
@@ -203,6 +208,8 @@ function CanvasInner() {
   // ── Edge click → select ────────────────────────────────────────────────────
   // ERD mode may render several RF edges per model edge (e.g. "e1::0"); strip
   // the suffix so the inspector still selects the underlying model edge.
+  // Invariant: model edge ids are generated as "e<n>" and never contain "::",
+  // so this split is a safe no-op in compact mode (plain ids pass through unchanged).
   const onEdgeClick = useCallback((_: React.MouseEvent, edge: Edge) => {
     setSelection({ type: "edge", id: edge.id.split("::")[0] });
   }, []);
