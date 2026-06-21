@@ -26,3 +26,18 @@ export function joinFieldType(
   }
   return "STRING";
 }
+
+// A foreign key's type must equal the primary key it references, or OWOX rejects
+// the relationship ("Incompatible types"). When a join key's two fields differ
+// in type and exactly one side is a PK, align the non-PK (FK) side to the PK
+// side's type. Returns the types to apply to [left, right], or null when nothing
+// should change (equal types, or ambiguous: both or neither side is a PK).
+export function alignedJoinTypes(
+  left: { type: string; pk: boolean },
+  right: { type: string; pk: boolean },
+): { left: string; right: string } | null {
+  if (left.type === right.type) return null;
+  if (left.pk && !right.pk) return { left: left.type, right: left.type };
+  if (right.pk && !left.pk) return { left: right.type, right: right.type };
+  return null;
+}

@@ -122,4 +122,20 @@ describe("pushModel", () => {
     const added = s.get().nodes.find(n => n.key === "newobj")!.schema.find(f => f.name === "id");
     expect(added?.type).toBe("INTEGER");
   });
+
+  it("coerces an existing FK field's type to match the referenced PK", async () => {
+    const s = createModelStore({ storageId: "stor_1" });
+    s.set({
+      storageId: "stor_1",
+      // newobj.id ALREADY exists as STRING (created in an earlier session); tags.id is an INTEGER PK.
+      nodes: [
+        { key: "newobj", title: "New object", inputSource: "SQL", schema: [{ name: "id", type: "STRING", pk: false }], position: { x: 0, y: 0 }, status: "created", owoxId: "owox_a" },
+        { key: "tags", title: "Tags", inputSource: "TABLE", schema: [{ name: "id", type: "INTEGER", pk: true }], position: { x: 100, y: 0 }, status: "created", owoxId: "owox_b" },
+      ],
+      edges: [{ id: "e1", from: "newobj", to: "tags", keys: [{ left: "id", right: "id" }], bidirectional: true }],
+    });
+    const apiMock = vi.fn(async () => ({ id: "owox_rel" }));
+    await pushModel(s, apiMock as any);
+    expect(s.get().nodes.find(n => n.key === "newobj")!.schema.find(f => f.name === "id")!.type).toBe("INTEGER");
+  });
 });

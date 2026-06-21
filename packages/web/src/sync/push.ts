@@ -1,7 +1,7 @@
 import type { ModelStore } from "../state/model";
 import { api as defaultApi } from "../lib/api";
 import { type ModelNode } from "@mc/okf";
-import { joinFieldType } from "./joinFieldType";
+import { joinFieldType, alignedJoinTypes } from "./joinFieldType";
 
 type Api = typeof defaultApi;
 
@@ -44,6 +44,7 @@ export async function pushModel(store: ModelStore, api: Api = defaultApi, storag
       for (const k of e.keys) {
         if (k.left) ensureField(store, e.from, k.left, joinFieldType(g0.nodes, g0.edges, e.from, k.left));
         if (k.right) ensureField(store, e.to, k.right, joinFieldType(g0.nodes, g0.edges, e.to, k.right));
+        if (k.left && k.right) alignJoinKeyTypes(store, e.from, k.left, e.to, k.right);
       }
     }
   }
@@ -175,4 +176,26 @@ function ensureField(store: ModelStore, nodeKey: string, fieldName: string, type
   if (!node) return;
   if (node.schema.some(f => f.name === fieldName)) return;
   store.updateNode(nodeKey, { schema: [...node.schema, { name: fieldName, type, pk: false }] });
+}
+
+// Coerce a join key's two fields to a common type when they differ (FK type must
+// equal the referenced PK type — otherwise OWOX rejects with "Incompatible
+// types"). Only acts when exactly one side is a PK; leaves ambiguous cases for
+// the user to resolve. Order-independent, so it also repairs a field that was
+// created STRING in an earlier session.
+function alignJoinKeyTypes(store: ModelStore, fromKey: string, leftName: string, toKey: string, rightName: string) {
+  const g = store.get();
+  const left = g.nodes.find(n => n.key === fromKey)?.schema.find(f => f.name === leftName);
+  const right = g.nodes.find(n => n.key === toKey)?.schema.find(f => f.name === rightName);
+  if (!left || !right) return;
+  const aligned = alignedJoinTypes(left, right);
+  if (!aligned) return;
+  if (left.type !== aligned.left) setFieldType(store, fromKey, leftName, aligned.left);
+  if (right.type !== aligned.right) setFieldType(store, toKey, rightName, aligned.right);
+}
+
+function setFieldType(store: ModelStore, nodeKey: string, fieldName: string, type: string) {
+  const node = store.get().nodes.find(n => n.key === nodeKey);
+  if (!node) return;
+  store.updateNode(nodeKey, { schema: node.schema.map(f => f.name === fieldName ? { ...f, type } : f) });
 }
