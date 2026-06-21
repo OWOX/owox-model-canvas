@@ -116,3 +116,30 @@ describe("serialize → parse round-trip (superset)", () => {
     expect(keys).toContain(edge.to);
   });
 });
+
+import { describe as descRt, it as itRt, expect as expRt } from "vitest";
+import { serializeBundle as serRt, parseBundle as parRt } from "../src/index";
+import type { ModelGraph as GraphRt, Cardinality as CardRt } from "../src/types";
+
+descRt("cardinality round-trip", () => {
+  const make = (cardinality: CardRt, bidirectional: boolean): GraphRt => ({
+    storageId: null,
+    nodes: [
+      { key: "tx", title: "Transactions", inputSource: "TABLE", status: "pending", owoxId: null, position: { x: 0, y: 0 }, schema: [{ name: "block_hash", type: "STRING", pk: true }] },
+      { key: "blocks", title: "Blocks", inputSource: "TABLE", status: "pending", owoxId: null, position: { x: 0, y: 0 }, schema: [{ name: "hash", type: "STRING", pk: true }] },
+    ],
+    edges: [{ id: "e1", from: "tx", to: "blocks", keys: [{ left: "block_hash", right: "hash" }], bidirectional, cardinality }],
+  });
+
+  for (const c of ["1:1", "1:N", "N:1", "N:N"] as CardRt[]) {
+    itRt(`survives ${c} (one-way)`, () => {
+      const back = parRt(serRt(make(c, false), "Demo").files);
+      expRt(back.edges[0]).toMatchObject({ from: "transactions", to: "blocks", cardinality: c });
+    });
+    itRt(`survives ${c} (bidirectional, normalized to from→to)`, () => {
+      const back = parRt(serRt(make(c, true), "Demo").files);
+      expRt(back.edges[0].cardinality).toBe(c);
+      expRt(back.edges[0].bidirectional).toBe(true);
+    });
+  }
+});
