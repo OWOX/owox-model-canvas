@@ -40,7 +40,7 @@ import { pushIntent } from "../../sync/pushGate";
 import { Dock, type Tool } from "./Dock";
 import { MartNode } from "./MartNode";
 import { RelEdge } from "./RelEdge";
-import { buildRfEdges } from "./edges";
+import { buildRfEdges, isEdgeReconnectable } from "./edges";
 import { erdAwareNodeSize } from "./layoutSize";
 import { Inspector } from "../inspector/Inspector";
 
@@ -139,6 +139,18 @@ function CanvasInner() {
 
   useEffect(() => { setRfNodes(graph.nodes.map(n => toRFNode(n, viewMode))); }, [graph.nodes, viewMode, setRfNodes]);
   useEffect(() => { setRfEdges(buildRfEdges(graph.edges, graph.nodes, viewMode)); }, [graph.edges, graph.nodes, viewMode, setRfEdges]);
+
+  // Mark only the selected relationship as reconnectable so dragging an endpoint
+  // moves the line the user picked (not whichever overlapping edge RF would grab).
+  // Patches `reconnectable` in place — never touches `selected` — and re-applies
+  // after any rebuild of the edges array above.
+  useEffect(() => {
+    const selId = selection?.type === "edge" ? selection.id : null;
+    setRfEdges(eds => eds.map(e => {
+      const want = isEdgeReconnectable((e.data as { modelEdgeId?: string } | undefined)?.modelEdgeId, selId, viewMode);
+      return e.reconnectable === want ? e : { ...e, reconnectable: want };
+    }));
+  }, [selection, viewMode, graph.edges, graph.nodes, setRfEdges]);
 
   // Mirror the model to localStorage on every change so a refresh/crash doesn't
   // lose work (Push to OWOX remains the real save).
@@ -389,6 +401,7 @@ function CanvasInner() {
             onEdgesChange={onRfEdgesChange}
             onConnect={onConnect}
             onReconnect={onReconnect}
+            edgesReconnectable={false}
             onPaneClick={onPaneClick}
             onNodeClick={onNodeClick}
             onEdgeClick={onEdgeClick}

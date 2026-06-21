@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { ModelNode, ModelEdge } from "@mc/okf";
-import { buildRfEdges } from "./edges";
+import { buildRfEdges, isEdgeReconnectable } from "./edges";
 
 const field = (name: string) => ({ name, type: "STRING", pk: false });
 const node = (key: string, fields: string[]): ModelNode => ({
@@ -76,5 +76,23 @@ describe("buildRfEdges cardinality passthrough", () => {
   it("includes cardinality in ERD edge data", () => {
     const rf = buildRfEdges(edges, nodes, "erd");
     expect((rf[0].data as any).cardinality).toBe("N:1");
+  });
+});
+
+describe("isEdgeReconnectable (only the selected relationship reconnects)", () => {
+  it("is true for the selected edge in compact mode", () => {
+    expect(isEdgeReconnectable("e1", "e1", "compact")).toBe(true);
+  });
+  it("is false for a non-selected edge", () => {
+    expect(isEdgeReconnectable("e2", "e1", "compact")).toBe(false);
+  });
+  it("is false when nothing is selected", () => {
+    expect(isEdgeReconnectable("e1", null, "compact")).toBe(false);
+  });
+  it("is false in ERD mode even for the selected edge (reconnect disabled there)", () => {
+    expect(isEdgeReconnectable("e1", "e1", "erd")).toBe(false);
+  });
+  it("is false when the edge has no modelEdgeId", () => {
+    expect(isEdgeReconnectable(undefined, "e1", "compact")).toBe(false);
   });
 });

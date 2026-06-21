@@ -14,6 +14,18 @@ function compactEdge(e: ModelEdge): Edge {
   };
 }
 
+// Reconnect (dragging an edge end to another port) is scoped to the SELECTED
+// relationship only. Otherwise, when several edges share a node handle their
+// reconnect anchors overlap and React Flow grabs whichever is topmost — not the
+// one the user picked. ERD view is display-only, so reconnect is off there.
+export function isEdgeReconnectable(
+  modelEdgeId: string | undefined,
+  selectedEdgeId: string | null,
+  viewMode: ViewMode,
+): boolean {
+  return viewMode !== "erd" && modelEdgeId != null && modelEdgeId === selectedEdgeId;
+}
+
 export function buildRfEdges(edges: ModelEdge[], nodes: ModelNode[], viewMode: ViewMode): Edge[] {
   if (viewMode !== "erd") return edges.map(compactEdge);
 
