@@ -1,4 +1,4 @@
-import type { ModelEdge, ModelNode, JoinKey } from "@mc/okf";
+import type { ModelEdge, ModelNode, JoinKey, Cardinality } from "@mc/okf";
 import { JoinIcon } from "../../lib/icons";
 
 interface RelationshipInspectorProps {
@@ -85,23 +85,56 @@ export function RelationshipInspector({ edge, fromNode, toNode, onUpdate, onEnsu
         </button>
       </div>
 
-      {/* Bidirectional checkbox */}
-      <label
-        className="flex items-start gap-[9px] p-[11px] border border-[#d8dee8] rounded-[9px] cursor-pointer"
-        title={`One-way: ${fromTitle} can pull fields from ${toTitle}. Bidirectional also lets ${toTitle} pull from ${fromTitle} — shown as a double-headed arrow.`}
-      >
-        <input
-          type="checkbox" checked={edge.bidirectional}
-          onChange={e => onUpdate({ bidirectional: e.target.checked })}
-          className="w-4 h-4 mt-[1px] accent-[#4f46e5] cursor-pointer"
-        />
-        <span className="text-[12.5px]">
-          <strong className="text-[13px] block">Bidirectional relationship</strong>
-          <span className="text-slate-500 mt-[2px] leading-[1.4] block">
-            Define the join from both sides, not just {fromTitle} → {toTitle}.
-          </span>
-        </span>
-      </label>
+      {/* Advanced */}
+      <details open className="border border-[#e2e8f0] rounded-[9px]">
+        <summary className="cursor-pointer select-none px-[11px] py-[8px] text-[11px] font-semibold text-slate-500 uppercase tracking-[0.3px]">
+          Advanced
+        </summary>
+        <div className="flex flex-col gap-[12px] p-[11px] pt-[4px]">
+          {/* Bidirectional checkbox */}
+          <label
+            className="flex items-start gap-[9px] cursor-pointer"
+            title={`One-way: ${fromTitle} can pull fields from ${toTitle}. Bidirectional also lets ${toTitle} pull from ${fromTitle} — shown as a double-headed arrow.`}
+          >
+            <input
+              type="checkbox" checked={edge.bidirectional}
+              onChange={e => onUpdate({ bidirectional: e.target.checked })}
+              className="w-4 h-4 mt-[1px] accent-[#4f46e5] cursor-pointer"
+            />
+            <span className="text-[12.5px]">
+              <strong className="text-[13px] block">Bidirectional relationship</strong>
+              <span className="text-slate-500 mt-[2px] leading-[1.4] block">
+                Define the join from both sides, not just {fromTitle} → {toTitle}.
+              </span>
+            </span>
+          </label>
+
+          {/* Cardinality */}
+          <div className="flex flex-col gap-[5px]">
+            <label htmlFor="rel-cardinality" className="text-[13px] font-semibold text-slate-900">Cardinality</label>
+            <select
+              id="rel-cardinality" aria-label="Cardinality"
+              value={edge.cardinality ?? ""}
+              onChange={e => onUpdate({ cardinality: (e.target.value || undefined) as Cardinality | undefined })}
+              className="text-[13px] px-[10px] py-[8px] border border-[#d8dee8] rounded-lg text-slate-900 bg-white focus:outline-none focus:border-[#4f46e5] focus:ring-2 focus:ring-[#eef0fe]"
+            >
+              <option value="">Unspecified</option>
+              <option value="1:1">1:1</option>
+              <option value="1:N">1:N</option>
+              <option value="N:1">N:1</option>
+              <option value="N:N">N:N</option>
+            </select>
+            {edge.cardinality && (
+              <span className="text-[12px] text-slate-500">
+                {fromTitle} ({edge.cardinality.split(":")[0]}) → {toTitle} ({edge.cardinality.split(":")[1]})
+              </span>
+            )}
+            <span className="text-[11.5px] text-slate-400 leading-[1.4]">
+              Optional — for modeling/visualization only. Not sent to OWOX (its SQL aggregates).
+            </span>
+          </div>
+        </div>
+      </details>
     </div>
   );
 }
