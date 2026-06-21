@@ -85,9 +85,43 @@ const medical: ModelGraph = {
   ],
 };
 
+const crypto_bitcoin: ModelGraph = {
+  storageId: null,
+  nodes: [
+    mart("blocks", "Blocks", "TABLE", [
+      f("hash", "STRING", true), f("number", "INTEGER"), f("size", "INTEGER"), f("weight", "INTEGER"),
+      f("version", "INTEGER"), f("merkle_root", "STRING"), f("timestamp", "TIMESTAMP"),
+      f("nonce", "STRING"), f("bits", "STRING"), f("transaction_count", "INTEGER"),
+    ]),
+    mart("transactions", "Transactions", "TABLE", [
+      f("hash", "STRING", true), f("size", "INTEGER"), f("virtual_size", "INTEGER"), f("version", "INTEGER"),
+      f("lock_time", "INTEGER"), f("block_hash", "STRING"), f("block_number", "INTEGER"),
+      f("block_timestamp", "TIMESTAMP"), f("input_count", "INTEGER"), f("output_count", "INTEGER"),
+      f("input_value", "NUMERIC"), f("output_value", "NUMERIC"), f("is_coinbase", "BOOLEAN"), f("fee", "NUMERIC"),
+    ]),
+    mart("inputs", "Inputs", "TABLE", [
+      f("transaction_hash", "STRING"), f("block_hash", "STRING"), f("block_number", "INTEGER"),
+      f("block_timestamp", "TIMESTAMP"), f("index", "INTEGER", true), f("spent_transaction_hash", "STRING"),
+      f("spent_output_index", "INTEGER"), f("script_asm", "STRING"), f("sequence", "INTEGER"),
+      f("type", "STRING"), f("value", "NUMERIC"),
+    ]),
+    mart("outputs", "Outputs", "TABLE", [
+      f("transaction_hash", "STRING"), f("block_hash", "STRING"), f("block_number", "INTEGER"),
+      f("block_timestamp", "TIMESTAMP"), f("index", "INTEGER", true), f("script_asm", "STRING"),
+      f("type", "STRING"), f("value", "NUMERIC"),
+    ]),
+  ],
+  edges: [
+    rel("e1", "transactions", "blocks", "block_hash", "hash"),
+    rel("e2", "inputs", "transactions", "transaction_hash", "hash"),
+    rel("e3", "outputs", "transactions", "transaction_hash", "hash"),
+  ],
+};
+
 export const TEMPLATES: Template[] = [
   { id: "ecommerce", name: "E-commerce", description: "Orders, products, customers and web sessions.", graph: ecommerce },
   { id: "saas", name: "SaaS", description: "Accounts, users, subscriptions, invoices and usage.", graph: saas },
   { id: "finance", name: "Finance", description: "Customers, accounts, transactions and branches.", graph: finance },
   { id: "medical", name: "Medical clinics", description: "Patients, doctors, appointments, visits and billing.", graph: medical },
+  { id: "crypto_bitcoin", name: "Bitcoin (crypto)", description: "Blocks, transactions, inputs and outputs from the public Bitcoin BigQuery dataset.", graph: crypto_bitcoin },
 ];
