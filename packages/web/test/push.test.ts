@@ -63,4 +63,26 @@ describe("pushModel", () => {
     expect(s.get().nodes[0].status).toBe("error");
     expect(res.failed).toBe(1);
   });
+
+  it("never sends cardinality in the relationship body", async () => {
+    const s = createModelStore({ storageId: "stor_1" });
+    s.set({
+      storageId: "stor_1",
+      nodes: [
+        { key: "n1", title: "Orders", inputSource: "SQL", schema: [{ name: "customer_id", type: "STRING", pk: false }], position: { x: 0, y: 0 }, status: "created", owoxId: "owox_a" },
+        { key: "n2", title: "Customers", inputSource: "SQL", schema: [{ name: "id", type: "STRING", pk: true }], position: { x: 100, y: 0 }, status: "created", owoxId: "owox_b" },
+      ],
+      edges: [
+        { id: "e1", from: "n1", to: "n2", keys: [{ left: "customer_id", right: "id" }], bidirectional: false, cardinality: "N:1" },
+      ],
+    });
+    const relationshipBodies: string[] = [];
+    const apiMock = vi.fn(async (path: string, init?: any) => {
+      if (path.includes("/relationships") && init?.body) relationshipBodies.push(init.body as string);
+      return { id: "owox_rel" };
+    });
+    await pushModel(s, apiMock as any);
+    expect(relationshipBodies.length).toBeGreaterThan(0);
+    for (const b of relationshipBodies) expect(b).not.toContain("cardinality");
+  });
 });

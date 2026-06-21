@@ -118,6 +118,8 @@ export async function pushModel(store: ModelStore, api: Api = defaultApi, storag
       try {
         await api(`/api/data-marts/${fromId}/relationships`, {
           method: "POST",
+          // NOTE: cardinality (e.cardinality) is intentionally NOT sent — it is a
+          // view-only modeling annotation; OWOX's generated SQL aggregates joins.
           body: JSON.stringify({
             targetDataMartId: toId,
             targetAlias: slugify(titleByKey.get(toKey) || toKey, toKey),
