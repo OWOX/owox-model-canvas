@@ -70,3 +70,43 @@ describe("parseBundle (OWOX format)", () => {
     expect(g.edges[0].keys).toEqual([{ left: "customer_id", right: "id" }]);
   });
 });
+
+const customersCard = `---
+type: "OWOX Data Mart"
+title: "Blocks"
+tags: ["owox", "table"]
+---
+# Blocks
+# Schema
+| Column | Type | Description |
+|--------|------|-------------|
+| \`hash\` | STRING | PK. id |
+`;
+const txCard = `---
+type: "OWOX Data Mart"
+title: "Transactions"
+tags: ["owox", "table"]
+---
+# Transactions
+# Schema
+| Column | Type | Description |
+|--------|------|-------------|
+| \`block_hash\` | STRING | PK. h |
+
+## Joins
+- [Blocks](./blocks.md) — \`block_hash = hash\` [N:1]
+`;
+
+describe("parse cardinality", () => {
+  it("reads the [N:1] suffix onto the edge", () => {
+    const g = parseBundle({ "b/blocks.md": customersCard, "b/transactions.md": txCard });
+    expect(g.edges).toHaveLength(1);
+    expect(g.edges[0]).toMatchObject({ from: "transactions", to: "blocks", cardinality: "N:1" });
+  });
+
+  it("leaves cardinality undefined when absent", () => {
+    const txNo = txCard.replace(" [N:1]", "");
+    const g = parseBundle({ "b/blocks.md": customersCard, "b/transactions.md": txNo });
+    expect(g.edges[0].cardinality).toBeUndefined();
+  });
+});

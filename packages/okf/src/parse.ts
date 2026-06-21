@@ -1,5 +1,7 @@
-import type { ModelGraph, ModelNode, ModelEdge, InputSource } from "./types";
+import type { ModelGraph, ModelNode, ModelEdge, InputSource, Cardinality } from "./types";
 import { parseFrontmatter } from "./slug";
+
+const FLIP_CARDINALITY: Record<Cardinality, Cardinality> = { "1:1": "1:1", "N:N": "N:N", "1:N": "N:1", "N:1": "1:N" };
 
 export function parseBundle(files: Record<string, string>): ModelGraph {
   const docs = Object.entries(files).filter(([p]) => p.endsWith(".md") && !p.endsWith("index.md"));
@@ -25,7 +27,7 @@ export function parseBundle(files: Record<string, string>): ModelGraph {
     });
   }
 
-  const raw: { from: string; to: string; keys: { left: string; right: string }[] }[] = [];
+  const raw: { from: string; to: string; keys: { left: string; right: string }[]; cardinality?: Cardinality }[] = [];
   for (const [path, text] of docs) {
     const { data, body } = parseFrontmatter(text);
     const fromSlug = path.split("/").pop()!.replace(/\.md$/, "");
@@ -43,15 +45,24 @@ export function parseBundle(files: Record<string, string>): ModelGraph {
         const rightPk = pkByKey.get(toKey);
         if (fkCol && rightPk) keys = [{ left: fkCol.name, right: rightPk }];
       }
-      raw.push({ from: fromKey, to: toKey, keys });
+      const cm = m[2].match(/\[(1:1|1:N|N:1|N:N)\]/);
+      const cardinality = cm ? (cm[1] as Cardinality) : undefined;
+      raw.push({ from: fromKey, to: toKey, keys, cardinality });
     }
   }
   const edges: ModelEdge[] = []; const seen = new Map<string, ModelEdge>();
   for (const r of raw) {
     const pairKey = [r.from, r.to].sort().join("|");
     const ex = seen.get(pairKey);
-    if (ex) { ex.bidirectional = true; continue; }
+    if (ex) {
+      ex.bidirectional = true;
+      if (!ex.cardinality && r.cardinality) {
+        ex.cardinality = ex.from === r.from ? r.cardinality : FLIP_CARDINALITY[r.cardinality];
+      }
+      continue;
+    }
     const e: ModelEdge = { id: `e${edges.length + 1}`, from: r.from, to: r.to, keys: r.keys, bidirectional: false };
+    if (r.cardinality) e.cardinality = r.cardinality;
     seen.set(pairKey, e); edges.push(e);
   }
   const storageId = (docs[0] && (parseFrontmatter(docs[0][1]).data.owox || {}).storageId) || null;
