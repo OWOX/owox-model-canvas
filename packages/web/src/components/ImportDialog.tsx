@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { filesToGraph, parsePastedMarkdown } from "../okf/io";
+import { filesToGraph, parsePastedMarkdown, zipToFiles } from "../okf/io";
 import type { ModelGraph } from "@mc/okf";
 
 interface ImportDialogProps {
@@ -17,20 +17,18 @@ export function ImportDialog({ onConfirm, onClose }: ImportDialogProps) {
     try {
       let files: Record<string, string> = {};
 
-      // Collect uploaded files
+      // Collect uploaded files (.zip bundles are unpacked; everything else is read as text)
       const uploadedFiles = fileInputRef.current?.files;
       if (uploadedFiles && uploadedFiles.length > 0) {
-        const reads = Array.from(uploadedFiles).map(
-          (f) =>
-            new Promise<[string, string]>((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onload = () => resolve([f.name, reader.result as string]);
-              reader.onerror = () => reject(new Error(`Failed to read ${f.name}`));
-              reader.readAsText(f);
-            }),
-        );
-        const pairs = await Promise.all(reads);
-        for (const [name, content] of pairs) files[name] = content;
+        for (const file of Array.from(uploadedFiles)) {
+          if (file.name.endsWith(".zip")) {
+            const buf = new Uint8Array(await file.arrayBuffer());
+            Object.assign(files, zipToFiles(buf));
+          } else {
+            const text = await file.text();
+            files[file.name] = text;
+          }
+        }
       }
 
       // Merge pasted text (takes precedence if both supplied)
@@ -87,12 +85,12 @@ export function ImportDialog({ onConfirm, onClose }: ImportDialogProps) {
         {/* File upload */}
         <div>
           <label className="block text-[13px] font-medium text-slate-700 mb-1">
-            Upload .md / .txt files
+            Upload .md / .txt / .zip files
           </label>
           <input
             ref={fileInputRef}
             type="file"
-            accept=".md,.txt"
+            accept=".md,.txt,.zip"
             multiple
             className="block w-full text-[13px] text-slate-600 file:mr-3 file:py-1 file:px-3 file:rounded-md file:border file:border-[#d8dee8] file:bg-white file:text-[13px] file:font-medium file:cursor-pointer hover:file:bg-[#f1f3f7]"
           />
