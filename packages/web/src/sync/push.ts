@@ -1,6 +1,6 @@
 import type { ModelStore } from "../state/model";
 import { api as defaultApi } from "../lib/api";
-import { type ModelNode } from "@mc/okf";
+import { type ModelNode, type ModelGraph } from "@mc/okf";
 import { joinFieldType, alignedJoinTypes } from "./joinFieldType";
 
 type Api = typeof defaultApi;
@@ -12,6 +12,22 @@ export interface PushResult {
   relationshipsCreated: number;
   relationshipsFailed: number;
   errors: string[];
+}
+
+// Preview what a push to the active storage would do, mirroring pushModel's skip
+// logic so the confirmation dialog's counts match reality. A mart is "already
+// live here" when it's created AND tagged to the active storage; such marts are
+// skipped. An imported (existing) edge is skipped only when both endpoints stay.
+export function pushPreview(graph: ModelGraph, storageId: string | null): { marts: number; relationships: number } {
+  const liveHere = (n: ModelNode) => n.status === "created" && n.owoxStorageId === storageId;
+  const skipped = new Set(graph.nodes.filter(liveHere).map(n => n.key));
+  const marts = graph.nodes.filter(n => !skipped.has(n.key)).length;
+  let relationships = 0;
+  for (const e of graph.edges) {
+    if (e.existing && skipped.has(e.from) && skipped.has(e.to)) continue;
+    relationships++;
+  }
+  return { marts, relationships };
 }
 
 // OWOX validates the output schema with a storage-specific discriminator, e.g.

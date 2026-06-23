@@ -1,6 +1,43 @@
 import { describe, it, expect, vi } from "vitest";
-import { pushModel } from "../src/sync/push";
+import { pushModel, pushPreview } from "../src/sync/push";
 import { createModelStore } from "../src/state/model";
+import type { ModelGraph } from "@mc/okf";
+
+describe("pushPreview", () => {
+  const mk = (over: Partial<ModelGraph>): ModelGraph => ({ storageId: "st_1", nodes: [], edges: [], ...over });
+
+  it("counts a stale 'created' mart (different storage) as to-be-pushed", () => {
+    const g = mk({ nodes: [
+      { key: "n1", title: "A", inputSource: "SQL", schema: [], position: { x: 0, y: 0 }, status: "created", owoxId: "a", owoxStorageId: "OLD" },
+    ] });
+    expect(pushPreview(g, "st_1").marts).toBe(1);
+  });
+  it("does not count a mart already live in the active storage", () => {
+    const g = mk({ nodes: [
+      { key: "n1", title: "A", inputSource: "SQL", schema: [], position: { x: 0, y: 0 }, status: "created", owoxId: "a", owoxStorageId: "st_1" },
+    ] });
+    expect(pushPreview(g, "st_1").marts).toBe(0);
+  });
+  it("skips an existing edge only when both endpoints stay (else counts it)", () => {
+    const live = { inputSource: "SQL" as const, schema: [], position: { x: 0, y: 0 }, status: "created" as const };
+    const skipBoth = mk({
+      nodes: [
+        { key: "n1", title: "A", ...live, owoxId: "a", owoxStorageId: "st_1" },
+        { key: "n2", title: "B", ...live, owoxId: "b", owoxStorageId: "st_1" },
+      ],
+      edges: [{ id: "e1", from: "n1", to: "n2", keys: [], bidirectional: false, existing: true }],
+    });
+    expect(pushPreview(skipBoth, "st_1").relationships).toBe(0);
+    const staleEnd = mk({
+      nodes: [
+        { key: "n1", title: "A", ...live, owoxId: "a", owoxStorageId: "OLD" },
+        { key: "n2", title: "B", ...live, owoxId: "b", owoxStorageId: "st_1" },
+      ],
+      edges: [{ id: "e1", from: "n1", to: "n2", keys: [], bidirectional: false, existing: true }],
+    });
+    expect(pushPreview(staleEnd, "st_1").relationships).toBe(1);
+  });
+});
 
 describe("pushModel", () => {
   it("creates pending nodes, stores owoxId, sets created", async () => {

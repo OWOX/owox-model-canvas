@@ -3,57 +3,44 @@ import { filesToGraph, parsePastedMarkdown, zipToFiles } from "../okf/io";
 import type { ModelGraph } from "@mc/okf";
 
 interface ImportDialogProps {
-  onConfirm: (graph: ModelGraph) => void;
+  onConfirm: (graph: ModelGraph, mode: "replace" | "merge") => void;
   onClose: () => void;
 }
 
 export function ImportDialog({ onConfirm, onClose }: ImportDialogProps) {
   const [pasteText, setPasteText] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<ModelGraph | null>(null);
+  const [mode, setMode] = useState<"replace" | "merge">("replace");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  async function handleConfirm() {
-    setError(null);
-    try {
-      let files: Record<string, string> = {};
-
-      // Collect uploaded files (.zip bundles are unpacked; everything else is read as text)
-      const uploadedFiles = fileInputRef.current?.files;
-      if (uploadedFiles && uploadedFiles.length > 0) {
-        for (const file of Array.from(uploadedFiles)) {
-          if (file.name.endsWith(".zip")) {
-            const buf = new Uint8Array(await file.arrayBuffer());
-            Object.assign(files, zipToFiles(buf));
-          } else {
-            const text = await file.text();
-            files[file.name] = text;
-          }
+  // Parse the current inputs into a ModelGraph (pending nodes — OKF carries no
+  // OWOX identity). Throws on empty/invalid input.
+  async function buildGraph(paste: string): Promise<ModelGraph> {
+    let files: Record<string, string> = {};
+    const uploaded = fileInputRef.current?.files;
+    if (uploaded && uploaded.length > 0) {
+      for (const file of Array.from(uploaded)) {
+        if (file.name.endsWith(".zip")) {
+          Object.assign(files, zipToFiles(new Uint8Array(await file.arrayBuffer())));
+        } else {
+          files[file.name] = await file.text();
         }
       }
-
-      // Merge pasted text (takes precedence if both supplied)
-      if (pasteText.trim()) {
-        const pasted = parsePastedMarkdown(pasteText.trim());
-        files = { ...files, ...pasted };
-      }
-
-      if (Object.keys(files).length === 0) {
-        setError("Provide a file or paste markdown content.");
-        return;
-      }
-
-      const graph = filesToGraph(files);
-
-      // Mark all imported nodes as pending (not yet in OWOX)
-      const markedGraph: ModelGraph = {
-        ...graph,
-        nodes: graph.nodes.map((n) => ({ ...n, status: "pending" as const, owoxId: null })),
-      };
-
-      onConfirm(markedGraph);
-    } catch (e) {
-      setError((e as Error).message ?? "Failed to parse OKF bundle.");
     }
+    if (paste.trim()) files = { ...files, ...parsePastedMarkdown(paste.trim()) };
+    if (Object.keys(files).length === 0) throw new Error("Provide a file or paste markdown content.");
+    const graph = filesToGraph(files);
+    return { ...graph, nodes: graph.nodes.map(n => ({ ...n, status: "pending" as const, owoxId: null })) };
+  }
+
+  // Re-parse to drive the live preview/count. Empty input clears both; a parse
+  // error is shown (and clears the preview) so the count never lies.
+  async function refresh(paste: string) {
+    const hasInput = (fileInputRef.current?.files?.length ?? 0) > 0 || paste.trim().length > 0;
+    if (!hasInput) { setPreview(null); setError(null); return; }
+    try { setPreview(await buildGraph(paste)); setError(null); }
+    catch (e) { setPreview(null); setError((e as Error).message ?? "Failed to parse OKF bundle."); }
   }
 
   return (
@@ -92,6 +79,7 @@ export function ImportDialog({ onConfirm, onClose }: ImportDialogProps) {
             type="file"
             accept=".md,.txt,.zip"
             multiple
+            onChange={() => void refresh(pasteText)}
             className="block w-full text-[13px] text-slate-600 file:mr-3 file:py-1 file:px-3 file:rounded-md file:border file:border-[#d8dee8] file:bg-white file:text-[13px] file:font-medium file:cursor-pointer hover:file:bg-[#f1f3f7]"
           />
         </div>
@@ -103,7 +91,7 @@ export function ImportDialog({ onConfirm, onClose }: ImportDialogProps) {
           </label>
           <textarea
             value={pasteText}
-            onChange={(e) => setPasteText(e.target.value)}
+            onChange={(e) => { setPasteText(e.target.value); void refresh(e.target.value); }}
             placeholder={"<!-- path/to/file.md -->\n...content..."}
             rows={6}
             className="w-full text-[13px] font-mono border border-[#d8dee8] rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"
@@ -116,6 +104,22 @@ export function ImportDialog({ onConfirm, onClose }: ImportDialogProps) {
           </p>
         )}
 
+        {/* Apply mode + count — mirrors the OWOX-import dialog */}
+        {preview && (
+          <div className="flex flex-col gap-1.5 border-t border-slate-100 pt-3">
+            <span className="text-[12px] font-medium text-slate-500">When applying to the canvas</span>
+            {(["replace", "merge"] as const).map(m => (
+              <label key={m} className="flex items-center gap-2 text-[13px] text-slate-800 cursor-pointer">
+                <input type="radio" name="okf-mode" checked={mode === m} onChange={() => setMode(m)} />
+                {m === "replace" ? "Replace the canvas" : "Merge into the canvas"}
+              </label>
+            ))}
+            <p className="text-[12px] text-slate-500">
+              Will import {preview.nodes.length} marts, {preview.edges.length} relationships.
+            </p>
+          </div>
+        )}
+
         <div className="flex gap-2 justify-end">
           <button
             onClick={onClose}
@@ -124,8 +128,9 @@ export function ImportDialog({ onConfirm, onClose }: ImportDialogProps) {
             Cancel
           </button>
           <button
-            onClick={handleConfirm}
-            className="text-[13px] font-[550] bg-[#4f46e5] text-white border border-[#4f46e5] rounded-lg px-4 py-[7px] cursor-pointer hover:bg-[#4338ca]"
+            onClick={() => preview && onConfirm(preview, mode)}
+            disabled={!preview}
+            className="text-[13px] font-[550] bg-[#4f46e5] text-white border border-[#4f46e5] rounded-lg px-4 py-[7px] cursor-pointer hover:bg-[#4338ca] disabled:opacity-50"
           >
             Import
           </button>

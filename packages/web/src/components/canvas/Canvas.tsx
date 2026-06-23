@@ -28,7 +28,8 @@ import { loadViewMode, persistViewMode, type ViewMode } from "../../state/viewMo
 import type { ModelNode, ModelEdge, ModelGraph } from "@mc/okf";
 
 import { graphToBundleFiles, downloadBundle } from "../../okf/io";
-import { pushModel, type PushResult } from "../../sync/push";
+import { pushModel, pushPreview, type PushResult } from "../../sync/push";
+import { detachFromOwox } from "../../sync/detach";
 
 import { api } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -38,6 +39,7 @@ import { OwoxImportDialog } from "../OwoxImportDialog";
 import { mergeGraphs } from "../../sync/owoxImport";
 import { LibraryDialog } from "../LibraryDialog";
 import { SignInModal } from "../SignInModal";
+import { PushConfirmDialog } from "../PushConfirmDialog";
 import { pushIntent } from "../../sync/pushGate";
 import { reconcileStorageId } from "../../sync/storageReconcile";
 import { Dock, type Tool } from "./Dock";
@@ -108,6 +110,7 @@ function CanvasInner() {
   const [pushResult, setPushResult] = useState<PushResult | null>(null);
   const [storages, setStorages] = useState<StorageOption[]>([]);
   const [signIn, setSignIn] = useState<{ mode: "connect" | "push" } | null>(null);
+  const [showPushConfirm, setShowPushConfirm] = useState(false);
   const { me, connect, signOut } = useAuth();
 
   // Load the project's storages once signed in; retry through OWOX's transient
@@ -295,28 +298,31 @@ function CanvasInner() {
     return { ...g, nodes: g.nodes.map(n => ({ ...n, position: positions.get(n.key) ?? n.position })) };
   }, [viewMode]);
 
-  const handleImportConfirm = useCallback((g: ModelGraph) => {
-    // Keep the currently-selected storage. The OKF bundle format doesn't carry a
-    // storageId (parse returns null), so taking the imported value would blank the
-    // selection — the TopBar select still shows a storage, but push would then
-    // fail with "No storage selected". Fall back to the imported id only when no
-    // storage is selected yet. (Mirrors handleUseTemplate.)
-    store.set({ ...withLayout(g), storageId: store.get().storageId ?? g.storageId });
+  // Merge a freshly loaded graph into the canvas, laying out only the new nodes
+  // so the existing layout isn't reshuffled. Shared by OKF + OWOX import (merge).
+  const applyMergeWithLayout = useCallback((g: ModelGraph) => {
+    const { graph, newKeys } = mergeGraphs(store.get(), g);
+    const positions = runDagreLayout(graph.nodes, graph.edges, viewMode);
+    store.set({ ...graph, nodes: graph.nodes.map(n => newKeys.has(n.key) ? { ...n, position: positions.get(n.key) ?? n.position } : n) });
+  }, [viewMode]);
+
+  const handleImportConfirm = useCallback((g: ModelGraph, mode: "replace" | "merge") => {
+    if (mode === "merge") {
+      applyMergeWithLayout(g);
+    } else {
+      // Keep the currently-selected storage. The OKF bundle format doesn't carry a
+      // storageId (parse returns null), so taking the imported value would blank the
+      // selection. Fall back to the imported id only when none is selected yet.
+      store.set({ ...withLayout(g), storageId: store.get().storageId ?? g.storageId });
+    }
     setShowImport(false);
-  }, [withLayout]);
+  }, [withLayout, applyMergeWithLayout]);
 
   const handleOwoxImportConfirm = useCallback((g: ModelGraph, mode: "replace" | "merge") => {
-    if (mode === "replace") {
-      store.set({ ...withLayout(g), storageId: g.storageId });
-    } else {
-      const { graph, newKeys } = mergeGraphs(store.get(), g);
-      // Lay out the whole merged graph but keep existing nodes' positions —
-      // only newly added nodes take the computed Dagre position.
-      const positions = runDagreLayout(graph.nodes, graph.edges, viewMode);
-      store.set({ ...graph, nodes: graph.nodes.map(n => newKeys.has(n.key) ? { ...n, position: positions.get(n.key) ?? n.position } : n) });
-    }
+    if (mode === "merge") applyMergeWithLayout(g);
+    else store.set({ ...withLayout(g), storageId: g.storageId });
     setShowOwoxImport(false);
-  }, [withLayout, viewMode]);
+  }, [withLayout, applyMergeWithLayout]);
 
   const handleUseTemplate = useCallback((g: ModelGraph) => {
     // Keep the model on the currently selected storage; auto-layout the template.
@@ -339,9 +345,27 @@ function CanvasInner() {
   }, [storages]);
 
   const handlePush = useCallback(() => {
+    // Anonymous → sign in first (no project/storage to confirm yet). Signed-in →
+    // confirm the target project + storage before sending (users kept pushing to
+    // the wrong storage).
     if (pushIntent(me) === "sign-in") { setSignIn({ mode: "push" }); return; }
-    void runPush();
-  }, [me, runPush]);
+    setShowPushConfirm(true);
+  }, [me]);
+
+  // Any sign-out detaches the model from OWOX (owoxId/created → unpushed drafts),
+  // so the same marts can be pushed into a different project after re-signing in.
+  const handleSignOut = useCallback(() => {
+    store.set(detachFromOwox(store.get()));
+    void signOut();
+  }, [signOut]);
+
+  // From the push dialog: detach + sign out, then immediately open sign-in so the
+  // user can connect a different project's key.
+  const handleChangeProject = useCallback(() => {
+    setShowPushConfirm(false);
+    handleSignOut();
+    setSignIn({ mode: "connect" });
+  }, [handleSignOut]);
 
   // ── Pending count for TopBar ───────────────────────────────────────────────
   const pendingCount = graph.nodes.filter(n => n.status === "pending").length;
@@ -371,7 +395,7 @@ function CanvasInner() {
         signedIn={!!me}
         projectTitle={me?.projectTitle}
         onSignIn={() => setSignIn({ mode: "connect" })}
-        onSignOut={() => { void signOut(); }}
+        onSignOut={handleSignOut}
       />
       {pushing && (
         <div className="fixed bottom-4 right-4 z-50 bg-slate-900 text-white text-[13px] px-4 py-2 rounded-lg shadow-lg">
@@ -392,6 +416,16 @@ function CanvasInner() {
           storages={storages}
           onConfirm={handleOwoxImportConfirm}
           onClose={() => setShowOwoxImport(false)}
+        />
+      )}
+      {showPushConfirm && me && (
+        <PushConfirmDialog
+          projectTitle={me.projectTitle}
+          storage={storages.find(s => s.id === graph.storageId) ?? null}
+          counts={pushPreview(graph, graph.storageId)}
+          onConfirm={() => { setShowPushConfirm(false); void runPush(); }}
+          onChangeProject={handleChangeProject}
+          onClose={() => setShowPushConfirm(false)}
         />
       )}
       {showLibrary && (
