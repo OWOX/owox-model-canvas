@@ -40,4 +40,11 @@ describe("TopBar", () => {
     fireEvent.click(screen.getByText(/Import from OWOX project/i));
     expect(fn).toHaveBeenCalledTimes(1);
   });
+
+  it("renders a Business Goal button and fires onOpenGoal", () => {
+    const onOpenGoal = vi.fn();
+    render(<TopBar signedIn={false} onOpenGoal={onOpenGoal} />);
+    fireEvent.click(screen.getByRole("button", { name: /business goal/i }));
+    expect(onOpenGoal).toHaveBeenCalled();
+  });
 });

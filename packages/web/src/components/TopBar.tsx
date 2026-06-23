@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Download, Upload, ChevronDown } from "lucide-react";
+import { Download, Upload, ChevronDown, Target } from "lucide-react";
 import { ProjectIcon, StorageIcon, LibraryIcon } from "../lib/icons";
 
 // First-visit onboarding hint pointing at the Library. Persisted so it only
@@ -22,6 +22,8 @@ export interface TopBarProps {
   projectTitle?: string;
   onSignIn?: () => void;
   onSignOut?: () => void;
+  onOpenGoal?: () => void;
+  goalSet?: boolean;
 }
 
 const LOGO = (
@@ -51,6 +53,7 @@ export function TopBar({
   pendingCount = 0, storages = [], storageId, onStorageChange,
   onImport, onImportFromOwox, onExport, onPush, onLibrary,
   signedIn, projectTitle, onSignIn, onSignOut,
+  onOpenGoal, goalSet = false,
 }: TopBarProps) {
   // Push split-button menu (holds the signed-in "Import from OWOX project" action).
   const [menuOpen, setMenuOpen] = useState(false);
@@ -71,6 +74,16 @@ export function TopBar({
         {LOGO}
         <span>Model Canvas</span>
       </div>
+
+      {/* Business Goal — low-key icon-only entry point for Insight Questions */}
+      <button
+        onClick={onOpenGoal}
+        aria-label="Business Goal"
+        title="Business Goal — see questions your model unlocks"
+        className={`w-[30px] h-[30px] rounded-lg flex items-center justify-center cursor-pointer transition-colors ${goalSet ? "text-[#4f46e5] bg-[#eef0fe]" : "text-slate-400 hover:bg-[#f1f3f7] hover:text-slate-600"}`}
+      >
+        <Target size={17} />
+      </button>
 
       {/* Project picker chip */}
       {signedIn && (
