@@ -1,0 +1,21 @@
+# OWOX Model Canvas
+
+> A free, anonymous web canvas to design data models — draw data marts and joinable relationships, explore templates, and export to Open Knowledge Format (OKF). No sign-in needed. Built by OWOX.
+
+OWOX Model Canvas lets data analysts and marketers sketch a data model visually: nodes are data marts (tables, views, SQL or connector outputs), edges are joinable relationships. You can start from ready-made templates, draw your own, get AI-suggested business questions a model unlocks, share a model via a link, and push the model into OWOX Data Marts.
+
+## Key features
+- Miro-like canvas to draw data marts and joinable relationships, with an ERD field-level view
+- Ready-made templates: E-commerce, SaaS, Marketplace, Marketing / Lead-gen, Mobile / Gaming, Finance, Healthcare, and public datasets (Bitcoin, Stack Overflow)
+- Import and export Open Knowledge Format (OKF) — a vendor-neutral markdown bundle for data models
+- Shareable model links — the whole model travels inside the URL, no account needed
+- Insight Questions (AI) — the business questions a model can answer, generated from schema metadata only
+- Optional one-click push into OWOX Data Marts (requires an OWOX API key)
+
+## Pricing
+Free. The canvas works fully without signing in. An OWOX API key is needed only to push a model into OWOX.
+
+## Links
+- App: https://model.owox.com/
+- OWOX Data Marts (the self-service analytics platform behind it): https://www.owox.com/
+- Get started free: https://www.owox.com/app-signup

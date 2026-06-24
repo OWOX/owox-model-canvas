@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Download, Upload, ChevronDown, Target, Share2 } from "lucide-react";
+import { Download, Upload, ChevronDown, Target, Share2, FileText, Image as ImageIcon } from "lucide-react";
 import { ProjectIcon, StorageIcon, LibraryIcon } from "../lib/icons";
 
 // First-visit onboarding hint pointing at the Library. Persisted so it only
@@ -16,6 +16,8 @@ export interface TopBarProps {
   onImport?: () => void;
   onImportFromOwox?: () => void;
   onExport?: () => void;
+  onExportSvg?: () => void;
+  exportDisabled?: boolean;
   onShare?: () => void;
   shareDisabled?: boolean;
   onPush?: () => void;
@@ -54,12 +56,15 @@ const LOGO = (
 
 export function TopBar({
   pendingCount = 0, storages = [], storageId, onStorageChange,
-  onImport, onImportFromOwox, onExport, onShare, shareDisabled = false, onPush, onLibrary,
+  onImport, onImportFromOwox, onExport, onExportSvg, exportDisabled = false,
+  onShare, shareDisabled = false, onPush, onLibrary,
   signedIn, projectTitle, onSignIn, onSignOut,
   onOpenGoal, goalSet = false, questionsEnabled = false,
 }: TopBarProps) {
   // Push split-button menu (holds the signed-in "Import from OWOX project" action).
   const [menuOpen, setMenuOpen] = useState(false);
+  // Export dropdown (OKF markdown / PNG / SVG).
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
   // Show the Library hint on first ever visit; stays lit until hovered.
   const [showLibraryHint, setShowLibraryHint] = useState(false);
   useEffect(() => {
@@ -123,18 +128,18 @@ export function TopBar({
 
       <div className="flex-1" />
 
-      {/* Template library */}
+      {/* Templates */}
       <div className="relative">
-        {/* Pulsing ring highlights the Library control on first visit */}
+        {/* Pulsing ring highlights the Templates control on first visit */}
         {showLibraryHint && (
           <span className="absolute -inset-[3px] rounded-[10px] ring-2 ring-[#1e88e5]/60 animate-pulse pointer-events-none" />
         )}
         <button
           onClick={() => { dismissLibraryHint(); onLibrary?.(); }}
-          title="Template library"
+          title="Browse model templates"
           className="text-[13px] font-[550] text-slate-900 border border-[#d8dee8] bg-white rounded-lg px-3 py-[7px] cursor-pointer flex items-center gap-[6px] hover:bg-[#f1f3f7]"
         >
-          <LibraryIcon size={15} /> Library
+          <LibraryIcon size={15} /> Templates
         </button>
         {showLibraryHint && (
           <div
@@ -143,7 +148,7 @@ export function TopBar({
             className="absolute top-[calc(100%+11px)] right-0 z-40 w-[232px] rounded-lg bg-slate-900 text-white text-[12.5px] leading-[1.45] px-3 py-2.5 shadow-[0_8px_24px_rgba(15,23,42,0.28)] cursor-default"
           >
             <span className="absolute -top-[5px] right-[18px] w-[10px] h-[10px] bg-slate-900 rotate-45" />
-            Roll out a basic model of your business from the library — or build it from scratch.
+            Roll out a ready-made model from the templates — or build your own from scratch.
           </div>
         )}
       </div>
@@ -156,13 +161,32 @@ export function TopBar({
         <Download size={15} /> Import
       </button>
 
-      {/* Export OKF */}
-      <button
-        onClick={onExport}
-        className="text-[13px] font-[550] border border-[#d8dee8] bg-white text-slate-900 rounded-lg px-3 py-[7px] cursor-pointer flex items-center gap-[6px] hover:bg-[#f1f3f7]"
-      >
-        <Upload size={15} /> Export OKF
-      </button>
+      {/* Export — dropdown: OKF markdown, PNG image, SVG image */}
+      <div className="relative">
+        <button
+          onClick={() => setExportMenuOpen(o => !o)}
+          disabled={exportDisabled}
+          aria-haspopup="menu"
+          aria-expanded={exportMenuOpen}
+          title={exportDisabled ? "Add a mart first, then export" : "Export this model"}
+          className="text-[13px] font-[550] border border-[#d8dee8] bg-white text-slate-900 rounded-lg px-3 py-[7px] cursor-pointer flex items-center gap-[6px] hover:bg-[#f1f3f7] disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Upload size={15} /> Export <ChevronDown size={14} className="text-slate-400" />
+        </button>
+        {exportMenuOpen && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setExportMenuOpen(false)} />
+            <div role="menu" className="absolute top-[calc(100%+6px)] right-0 z-50 w-[232px] rounded-lg border border-[#d8dee8] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.18)] py-1">
+              <button role="menuitem" onClick={() => { setExportMenuOpen(false); onExport?.(); }} className="w-full text-left text-[13px] text-slate-900 px-3 py-2 cursor-pointer flex items-center gap-[8px] hover:bg-[#f1f3f7]">
+                <FileText size={15} className="text-slate-500" /> OKF (Markdown)
+              </button>
+              <button role="menuitem" onClick={() => { setExportMenuOpen(false); onExportSvg?.(); }} className="w-full text-left text-[13px] text-slate-900 px-3 py-2 cursor-pointer flex items-center gap-[8px] hover:bg-[#f1f3f7]">
+                <ImageIcon size={15} className="text-slate-500" /> Image (SVG)
+              </button>
+            </div>
+          </>
+        )}
+      </div>
 
       {/* Share — copy a link that reopens this exact model (no sign-in needed) */}
       <button

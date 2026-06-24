@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { GripVertical } from "lucide-react";
 import type { SchemaField } from "@mc/okf";
+import { InfoTip } from "./InfoTip";
 
 // Canonical OWOX schema types — the set accepted across storages (BigQuery,
 // Snowflake, …). Note: no DATETIME (not in the cross-storage enum).
@@ -39,13 +40,13 @@ export function SchemaEditor({ schema, onChange }: SchemaEditorProps) {
 
   // Handle · Name · Type · PK · Alias · Description · remove. Wider than the
   // inspector, so the grid scrolls horizontally inside the bordered box.
-  const cols = "16px minmax(110px,1fr) 96px 30px minmax(110px,1fr) minmax(150px,1.4fr) 24px";
+  const cols = "16px minmax(110px,1fr) 96px 42px minmax(110px,1fr) minmax(150px,1.4fr) 24px";
   const inputCls = "w-full text-[12.5px] px-[7px] py-[5px] border border-[#d8dee8] rounded-lg text-slate-900 focus:outline-none focus:border-[#1e88e5] focus:ring-2 focus:ring-[#e6f1fb]";
 
   return (
     <div className="border border-[#d8dee8] rounded-[10px] overflow-hidden">
       <div className="overflow-x-auto">
-        <div className="min-w-[576px]">
+        <div className="min-w-[588px]">
           {/* Header */}
           <div
             className="grid bg-[#f8fafc] px-[10px] py-[7px] text-[10.5px] font-semibold text-slate-500 uppercase tracking-[0.3px] border-b border-[#d8dee8] gap-[6px]"
@@ -54,9 +55,9 @@ export function SchemaEditor({ schema, onChange }: SchemaEditorProps) {
             <span />
             <span>Name</span>
             <span>Type</span>
-            <span>PK</span>
-            <span>Alias</span>
-            <span>Description</span>
+            <span className="flex items-center gap-[3px]">PK <InfoTip text="Primary key — uniquely identifies a row. Marks the field as a key when pushed to OWOX; used to anchor relationships." /></span>
+            <span className="flex items-center gap-[3px]">Alias <InfoTip text="Business-friendly label for the field (e.g. “Net Revenue” for net_revenue). Optional; shown to business users." /></span>
+            <span className="flex items-center gap-[3px]">Description <InfoTip text="What the field means and, for metrics, how it's calculated. Flows to OKF export and the AI question suggestions." /></span>
             <span />
           </div>
 

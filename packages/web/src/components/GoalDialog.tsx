@@ -8,13 +8,19 @@ const DISCLAIMER =
 
 interface GoalDialogProps {
   current: BusinessGoal | null;
+  /** Pre-select this niche when there's no saved goal yet (e.g. from the
+   *  template the user just loaded), so they only need to pick a goal. */
+  suggestedNiche?: string | null;
   onConfirm: (g: BusinessGoal) => void;
   onClear: () => void;
   onClose: () => void;
 }
 
-export function GoalDialog({ current, onConfirm, onClear, onClose }: GoalDialogProps) {
-  const initialNiche = NICHE_PRESETS.find(n => n.label === current?.niche) ?? null;
+export function GoalDialog({ current, suggestedNiche, onConfirm, onClear, onClose }: GoalDialogProps) {
+  const initialNiche =
+    NICHE_PRESETS.find(n => n.label === current?.niche)
+    ?? NICHE_PRESETS.find(n => n.label === suggestedNiche)
+    ?? null;
   const [niche, setNiche] = useState<NichePreset | { label: string } | null>(
     initialNiche ?? (current ? { label: current.niche } : null),
   );

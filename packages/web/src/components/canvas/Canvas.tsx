@@ -20,7 +20,7 @@ import "@xyflow/react/dist/style.css";
 import "./canvas.css";
 
 import dagre from "@dagrejs/dagre";
-import { X } from "lucide-react";
+import { X, Sparkles } from "lucide-react";
 
 import { createModelStore } from "../../state/model";
 import { loadPersistedGraph, persistGraph } from "../../state/persist";
@@ -29,6 +29,7 @@ import type { ModelNode, ModelEdge, ModelGraph } from "@mc/okf";
 
 import { graphToBundleFiles, downloadBundle } from "../../okf/io";
 import { buildShareUrl, readSharedModel, clearSharedModelFromUrl } from "../../share/url";
+import { exportCanvasSvg } from "../../share/exportImage";
 import { pushModel, pushPreview, type PushResult } from "../../sync/push";
 import { detachFromOwox } from "../../sync/detach";
 
@@ -78,6 +79,18 @@ if (sharedGraph) {
 // true for the session. Gates the first-screen "start" chooser: shown once for
 // new visitors, never over a returning user's model or an opened shared link.
 const isFirstVisit = !sharedGraph && persistedGraph === undefined;
+
+// Map a loaded template (by its display name) to the closest Insight-Questions
+// niche, so opening the Business Goal dialog after a template can pre-pick it.
+const TEMPLATE_NICHE: Record<string, string> = {
+  "E-commerce / Retail": "E-commerce / Retail",
+  "SaaS / Subscription": "SaaS / Subscription",
+  "Marketplace": "Marketplace / Platform",
+  "Marketing / Lead-gen": "B2B Marketing / Lead-gen",
+  "Mobile / Gaming": "Mobile App / Gaming",
+  "Finance / Fintech": "Fintech / Lending",
+  "Healthcare": "Healthcare Provider",
+};
 
 // ── helpers to convert between model and RF types ───────────────────────────
 function toRFNode(n: ModelNode, viewMode: ViewMode, keyFields?: string[]): Node {
@@ -134,11 +147,18 @@ const edgeTypes = { rel: RelEdge };
 
 function CanvasInner() {
   const graph = useSyncExternalStore(store.subscribe, store.get);
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, fitView } = useReactFlow();
+  // True briefly during auto-layout so nodes glide (CSS transition) to their new
+  // positions instead of snapping.
+  const [layoutAnimating, setLayoutAnimating] = useState(false);
 
   const [selection, setSelection] = useState<Selection>(null);
   const [goal, setGoalState] = useState<BusinessGoal | null>(loadGoal());
   const [showGoal, setShowGoal] = useState(false);
+  // Niche guessed from the last template loaded — pre-fills the Business Goal
+  // dialog. And a session flag so the Insight-Questions hero prompt is dismissable.
+  const [suggestedNiche, setSuggestedNiche] = useState<string | null>(null);
+  const [heroDismissed, setHeroDismissed] = useState(false);
   // Server tells us whether the Insight Questions feature is on (GEMINI_API_KEY
   // set). Gates the Business Goal button so the feature is a pure env switch.
   const [questionsEnabled, setQuestionsEnabled] = useState(false);
@@ -302,11 +322,17 @@ function CanvasInner() {
     if (t === "layout") {
       const { nodes, edges } = store.get();
       const positions = runDagreLayout(nodes, edges, viewMode);
+      // Turn on node transitions, move everything, then frame the result — so the
+      // model visibly "organizes itself" instead of snapping. Cleared after the
+      // glide so dragging stays instant.
+      setLayoutAnimating(true);
       positions.forEach((pos, key) => store.updateNode(key, { position: pos }));
+      setTimeout(() => fitView({ duration: 500, padding: 0.18 }), 30);
+      setTimeout(() => setLayoutAnimating(false), 560);
       return;
     }
     setTool(t);
-  }, [viewMode]);
+  }, [viewMode, fitView]);
 
   const handleToggleView = useCallback(() => {
     setViewMode(prev => {
@@ -344,6 +370,13 @@ function CanvasInner() {
     const files = graphToBundleFiles(store.get(), title);
     downloadBundle(files, title);
   }, [me]);
+
+  // Export the canvas as an SVG (whole model, OWOX watermark). Uses the live RF
+  // node list (measured sizes) to frame the export.
+  const imageName = (me?.projectTitle ?? "model").trim() || "model";
+  const handleExportSvg = useCallback(() => {
+    exportCanvasSvg(rfNodes, imageName).catch(() => setShareToast("Couldn't export the image — please try again."));
+  }, [rfNodes, imageName]);
 
   // Copy a shareable link that reopens this exact model. Falls back to a prompt
   // if the clipboard API is blocked (insecure context / permissions).
@@ -405,6 +438,8 @@ function CanvasInner() {
   }, [withLayout, applyMergeWithLayout]);
 
   const handleUseTemplate = useCallback((g: ModelGraph, name: string) => {
+    // Remember the matching niche so the Business Goal dialog can pre-pick it.
+    if (TEMPLATE_NICHE[name]) setSuggestedNiche(TEMPLATE_NICHE[name]);
     // Empty canvas → drop the template straight in. Non-empty → ask Replace vs
     // Merge first (mirrors the OKF/OWOX import dialogs) so existing work isn't
     // silently wiped.
@@ -463,9 +498,10 @@ function CanvasInner() {
   const pendingCount = graph.nodes.filter(n => n.status === "pending").length;
 
   // ── Canvas class based on tool ─────────────────────────────────────────────
-  const canvasClass =
-    tool === "add" ? "canvas-add" :
-    tool === "connect" ? "canvas-connect" : "";
+  const canvasClass = [
+    tool === "add" ? "canvas-add" : tool === "connect" ? "canvas-connect" : "",
+    layoutAnimating ? "canvas-animating" : "",
+  ].filter(Boolean).join(" ");
 
   return (
     <div
@@ -482,6 +518,8 @@ function CanvasInner() {
         onImport={() => setShowImport(true)}
         onImportFromOwox={() => setShowOwoxImport(true)}
         onExport={handleExport}
+        onExportSvg={handleExportSvg}
+        exportDisabled={graph.nodes.length === 0}
         onShare={handleShare}
         shareDisabled={graph.nodes.length === 0}
         onPush={handlePush}
@@ -550,6 +588,7 @@ function CanvasInner() {
       {showGoal && (
         <GoalDialog
           current={goal}
+          suggestedNiche={suggestedNiche}
           onConfirm={g => { setGoalState(g); persistGoal(g); setShowGoal(false); }}
           onClear={() => { setGoalState(null); persistGoal(null); setShowGoal(false); }}
           onClose={() => setShowGoal(false)}
@@ -624,6 +663,24 @@ function CanvasInner() {
                 Double-click anywhere to add an object.<br />
                 Drag from a node's port to create a relationship.
               </div>
+            </div>
+          )}
+
+          {/* Insight Questions hero — surfaces the AI feature once a model exists.
+              Shown only while AI is available and no goal is set yet; dismissable. */}
+          {questionsEnabled && graph.nodes.length > 0 && !goal && !heroDismissed && (
+            <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-[5] flex items-center gap-3 rounded-xl border border-[#d8dee8] bg-white px-4 py-2.5 shadow-[0_8px_24px_rgba(15,23,42,0.14)]">
+              <Sparkles size={16} className="flex-shrink-0 text-[#1e88e5]" />
+              <span className="text-[13px] text-slate-700">See the business questions this model can answer</span>
+              <button
+                onClick={() => { setHeroDismissed(true); setShowGoal(true); }}
+                className="rounded-lg bg-[#1e88e5] px-3 py-[6px] text-[13px] font-[600] text-white hover:bg-[#1976d2]"
+              >
+                Show me
+              </button>
+              <button onClick={() => setHeroDismissed(true)} aria-label="Dismiss" className="text-slate-400 hover:text-slate-700">
+                <X size={15} />
+              </button>
             </div>
           )}
         </div>

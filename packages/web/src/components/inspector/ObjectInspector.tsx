@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import type { ModelNode, InputSource, SchemaField } from "@mc/okf";
 import { SchemaEditor } from "./SchemaEditor";
+import { InfoTip } from "./InfoTip";
 import { InputSourceIcon, OutputSchemaIcon } from "../../lib/icons";
 
 const INPUT_SOURCES: InputSource[] = ["SQL", "CONNECTOR", "VIEW", "TABLE"];
@@ -63,12 +64,7 @@ export function ObjectInspector({ node, onUpdate }: ObjectInspectorProps) {
         <label className="flex items-center gap-[5px] text-[11px] font-semibold text-slate-500 uppercase tracking-[0.3px] mb-[6px]">
           <InputSourceIcon size={13} className="text-slate-400" />
           Input source
-          <span
-            className="w-[14px] h-[14px] rounded-full bg-slate-200 text-slate-500 text-[10px] font-bold inline-flex items-center justify-center cursor-help normal-case tracking-normal"
-            title="How this Data Mart gets its data. New marts default to SQL; can also be Connector, View or Table."
-          >
-            i
-          </span>
+          <InfoTip text="How this Data Mart gets its data. New marts default to SQL; can also be Connector, View or Table." />
         </label>
         <select
           value={node.inputSource}
@@ -88,7 +84,10 @@ export function ObjectInspector({ node, onUpdate }: ObjectInspectorProps) {
           className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-[#f8fafc]"
         >
           {defOpen ? <ChevronDown size={14} className="text-slate-400" /> : <ChevronRight size={14} className="text-slate-400" />}
-          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-[0.3px] flex-1">Definition</span>
+          <span className="flex items-center gap-[5px] text-[11px] font-semibold text-slate-500 uppercase tracking-[0.3px] flex-1">
+            Definition
+            <InfoTip text="The mart's source: a SQL query, or a fully-qualified View/Table reference. Optional — leave blank to set it in OWOX after Push." />
+          </span>
           <span className="text-[11px] text-slate-400">{node.definition?.trim() ? "set" : "optional"}</span>
         </button>
         {defOpen && (
@@ -107,8 +106,9 @@ export function ObjectInspector({ node, onUpdate }: ObjectInspectorProps) {
 
       {/* Description */}
       <div>
-        <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-[0.3px] mb-[6px]">
+        <label className="flex items-center gap-[5px] text-[11px] font-semibold text-slate-500 uppercase tracking-[0.3px] mb-[6px]">
           Description
+          <InfoTip text="Plain-language summary of what this mart represents. Shown in OKF export and used by the AI to suggest questions." />
         </label>
         <textarea
           value={node.description ?? ""}
@@ -123,12 +123,7 @@ export function ObjectInspector({ node, onUpdate }: ObjectInspectorProps) {
         <label className="flex items-center gap-[5px] text-[11px] font-semibold text-slate-500 uppercase tracking-[0.3px] mb-[6px]">
           <OutputSchemaIcon size={13} className="text-slate-400" />
           Output schema
-          <span
-            className="w-[14px] h-[14px] rounded-full bg-slate-200 text-slate-500 text-[10px] font-bold inline-flex items-center justify-center cursor-help normal-case tracking-normal"
-            title="Fields this Data Mart outputs. Set the data type and mark primary keys — these are pushed to the mart schema."
-          >
-            i
-          </span>
+          <InfoTip text="Fields this Data Mart outputs. Set the data type and mark primary keys — these are pushed to the mart schema. Drag the handle to reorder." />
         </label>
         <SchemaEditor
           schema={node.schema}

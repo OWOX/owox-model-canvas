@@ -25,3 +25,9 @@
   stroke: #1e88e5;
   stroke-width: 2.5;
 }
+
+/* Auto-layout: nodes glide to their new Dagre positions instead of snapping.
+   Only active during the layout action so dragging stays instant. */
+.canvas-animating .react-flow__node {
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}

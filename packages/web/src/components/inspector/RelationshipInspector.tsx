@@ -1,5 +1,6 @@
 import type { ModelEdge, ModelNode, JoinKey, Cardinality } from "@mc/okf";
 import { JoinIcon } from "../../lib/icons";
+import { InfoTip } from "./InfoTip";
 
 interface RelationshipInspectorProps {
   edge: ModelEdge;
@@ -43,12 +44,7 @@ export function RelationshipInspector({ edge, fromNode, toNode, onUpdate, onEnsu
       <div>
         <label className="flex items-center gap-[5px] text-[11px] font-semibold text-slate-500 uppercase tracking-[0.3px] mb-[6px]">
           Join keys
-          <span
-            className="w-[14px] h-[14px] rounded-full bg-slate-200 text-slate-500 text-[10px] font-bold inline-flex items-center justify-center cursor-help normal-case tracking-normal"
-            title="Columns matched between the two marts (left = right). Pick a field from the schema or type a new one — new fields are added to the mart's Output schema automatically."
-          >
-            i
-          </span>
+          <InfoTip text="Columns matched between the two marts (left = right). Pick a field from the schema or type a new one — new fields are added to the mart's Output schema automatically." />
         </label>
 
         {edge.keys.map((k, i) => (
@@ -102,7 +98,10 @@ export function RelationshipInspector({ edge, fromNode, toNode, onUpdate, onEnsu
               className="w-4 h-4 mt-[1px] accent-[#1e88e5] cursor-pointer"
             />
             <span className="text-[12.5px]">
-              <strong className="text-[13px] block">Bidirectional relationship</strong>
+              <strong className="text-[13px] flex items-center gap-[5px]">
+                Bidirectional relationship
+                <InfoTip text={`One-way: ${fromTitle} can pull fields from ${toTitle}. Bidirectional also lets ${toTitle} pull from ${fromTitle} — shown as a double-headed arrow.`} />
+              </strong>
               <span className="text-slate-500 mt-[2px] leading-[1.4] block">
                 Define the join from both sides, not just {fromTitle} → {toTitle}.
               </span>
@@ -111,7 +110,10 @@ export function RelationshipInspector({ edge, fromNode, toNode, onUpdate, onEnsu
 
           {/* Cardinality */}
           <div className="flex flex-col gap-[5px]">
-            <label htmlFor="rel-cardinality" className="text-[13px] font-semibold text-slate-900">Cardinality</label>
+            <label htmlFor="rel-cardinality" className="flex items-center gap-[5px] text-[13px] font-semibold text-slate-900">
+              Cardinality
+              <InfoTip text="How many rows on each side match: 1:1, 1:N, N:1 or N:N. Documentation only — drawn on the canvas, not sent to OWOX (its SQL aggregates)." />
+            </label>
             <select
               id="rel-cardinality" aria-label="Cardinality"
               value={edge.cardinality ?? ""}

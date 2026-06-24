@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, ShieldCheck } from "lucide-react";
 import { OwoxDataMartsHero } from "./OwoxDataMartsHero";
 import { signupUrl } from "../lib/links";
 
@@ -100,6 +100,25 @@ export function SignInModal({ mode, connect, onConnected, onClose }: SignInModal
           className="mt-2 w-full rounded-lg border border-[#d8dee8] px-3 py-3 text-sm outline-none focus:border-[#1e88e5]"
         />
         {err && <p className="mt-2 text-sm text-red-500">{err}</p>}
+
+        {/* Trust note at the moment of the ask — accurate to how the BFF handles
+            the key (see packages/server/src/auth/session.ts). */}
+        <div className="mt-3 flex items-start gap-2 rounded-lg border border-[#e6e9f0] bg-[#f7f8fa] px-3 py-2.5 text-[12px] leading-relaxed text-slate-600">
+          <ShieldCheck size={15} className="mt-[1px] flex-shrink-0 text-[#1e88e5]" />
+          <span>
+            We exchange your key for a short-lived access token held <b>only in memory</b> on the server —
+            never stored at rest, and used solely to push your model. The key stays in your browser and is
+            cleared when you sign out. It's{" "}
+            <a
+              href="https://github.com/OWOX/canvas-model-editor/blob/main/packages/server/src/auth/session.ts"
+              target="_blank"
+              rel="noreferrer"
+              className="font-semibold text-[#1e88e5] hover:underline"
+            >
+              open source — read the code
+            </a>.
+          </span>
+        </div>
 
         <div className="mt-4 flex gap-2">
           <button

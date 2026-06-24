@@ -12,6 +12,7 @@
     "@mc/okf": "workspace:*",
     "@xyflow/react": "^12.3.0",
     "fflate": "^0.8.3",
+    "html-to-image": "^1.11.13",
     "lucide-react": "^0.460.0",
     "posthog-js": "^1.393.4",
     "react": "^18.3.0",
