@@ -15,22 +15,26 @@ export function buildApp() {
   const app = Fastify({ logger: false, trustProxy: true });
   app.register(cookie);
 
-  // Security headers. script-src stays 'self' (the Vite build has no inline
-  // scripts) — that is the main XSS guard for the OWOX key kept in
-  // localStorage. style-src needs 'unsafe-inline' because @xyflow/react
-  // positions nodes via inline style attributes; without it the canvas breaks.
-  // NOTE: adding analytics later (PostHog/GTM) requires extending script-src
-  // and connect-src with their domains here.
+  // Security headers. script-src stays 'self' plus the PostHog managed proxy
+  // (mrph.owox.com) — that proxy serves both the recorder/array bundles
+  // (upstream asset_host is null) and the ingestion endpoint, so it must be in
+  // script-src and connect-src. 'self' remains the main XSS guard for the OWOX
+  // key kept in localStorage; the Vite build itself has no inline scripts.
+  // style-src needs 'unsafe-inline' because @xyflow/react positions nodes via
+  // inline style attributes; without it the canvas breaks. worker-src allows
+  // blob: because PostHog session replay runs its recorder in a web worker.
+  const POSTHOG_PROXY = "https://mrph.owox.com";
   app.register(helmet, {
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
         baseUri: ["'self'"],
-        scriptSrc: ["'self'"],
+        scriptSrc: ["'self'", POSTHOG_PROXY],
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", "data:", "blob:"],
         fontSrc: ["'self'", "data:"],
-        connectSrc: ["'self'"],
+        connectSrc: ["'self'", POSTHOG_PROXY],
+        workerSrc: ["'self'", "blob:"],
         objectSrc: ["'none'"],
         frameAncestors: ["'none'"],
         formAction: ["'self'"],

@@ -13,3 +13,8 @@ services:
         value: production
       - key: GEMINI_API_KEY
         sync: false
+      # PostHog project token (public). Inlined into the web build by Vite at
+      # build time, so it must be present in the build environment. Unset in
+      # preview deploys → analytics stays off there.
+      - key: VITE_POSTHOG_KEY
+        sync: false
