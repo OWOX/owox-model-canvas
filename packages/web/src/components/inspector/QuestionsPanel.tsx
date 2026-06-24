@@ -9,6 +9,9 @@ interface QuestionsPanelProps {
   nodes: ModelNode[];
   edges: ModelEdge[];
   goal: BusinessGoal | null;
+  /** Whether the server has an AI key configured. When false the panel still
+   *  shows (so the feature is discoverable) but explains AI isn't available. */
+  aiEnabled?: boolean;
   onEditGoal: () => void;
 }
 
@@ -19,7 +22,7 @@ type State =
   | { kind: "limit" }
   | { kind: "error" };
 
-export function QuestionsPanel({ node, nodes, edges, goal, onEditGoal }: QuestionsPanelProps) {
+export function QuestionsPanel({ node, nodes, edges, goal, aiEnabled = true, onEditGoal }: QuestionsPanelProps) {
   const [state, setState] = useState<State>({ kind: "idle" });
 
   // Reset to idle whenever the selected mart changes. We NEVER auto-generate —
@@ -54,7 +57,13 @@ export function QuestionsPanel({ node, nodes, edges, goal, onEditGoal }: Questio
         )}
       </div>
 
-      {isEmpty ? (
+      {!aiEnabled ? (
+        <div className="text-[12px] text-slate-500 leading-[1.5]">
+          AI question suggestions aren't enabled on this deployment. You can still set a{" "}
+          <button onClick={onEditGoal} className="text-[#1e88e5] hover:underline cursor-pointer">business goal</button>{" "}
+          to focus your model.
+        </div>
+      ) : isEmpty ? (
         <div className="text-[12px] text-slate-400 italic">Add fields or a description to this mart to unlock questions.</div>
       ) : (
         <>

@@ -163,15 +163,14 @@ export function Inspector({
               node={selectedNode}
               onUpdate={patch => onUpdateNode(selectedNode.key, patch)}
             />
-            {questionsEnabled && (
-              <QuestionsPanel
-                node={selectedNode}
-                nodes={nodes}
-                edges={edges}
-                goal={goal ?? null}
-                onEditGoal={onEditGoal ?? (() => {})}
-              />
-            )}
+            <QuestionsPanel
+              node={selectedNode}
+              nodes={nodes}
+              edges={edges}
+              goal={goal ?? null}
+              aiEnabled={questionsEnabled ?? false}
+              onEditGoal={onEditGoal ?? (() => {})}
+            />
           </>
         ) : selectedEdge ? (
           <RelationshipInspector
