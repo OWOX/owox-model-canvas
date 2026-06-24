@@ -70,9 +70,18 @@ export function TopBar({
 
   return (
     <div className="flex items-center gap-3 px-4 py-[9px] bg-white border-b border-[#d8dee8] flex-shrink-0 z-30">
-      {/* Brand */}
+      {/* Brand — logo links to owox.com */}
       <div className="flex items-center gap-[9px] font-[650] text-[15px] tracking-[-0.2px]">
-        {LOGO}
+        <a
+          href="https://owox.com"
+          target="_blank"
+          rel="noreferrer"
+          title="OWOX — owox.com"
+          aria-label="OWOX — owox.com"
+          className="flex items-center rounded-md transition-opacity hover:opacity-80"
+        >
+          {LOGO}
+        </a>
         <span>Model Canvas</span>
       </div>
 
