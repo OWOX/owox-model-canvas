@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { ChevronRight } from "lucide-react";
+import { OwoxDataMartsHero } from "./OwoxDataMartsHero";
 
 export interface SignInModalProps {
   /** "connect" = just sign in; "push" = sign in then resume a push. */
@@ -14,6 +16,8 @@ export function SignInModal({ mode, connect, onConnected, onClose }: SignInModal
   const [key, setKey] = useState("");
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+  // Product placement — collapsed by default so it stays low-key.
+  const [aboutOpen, setAboutOpen] = useState(false);
 
   async function submit() {
     if (!key.trim()) return;
@@ -41,6 +45,49 @@ export function SignInModal({ mode, connect, onConnected, onClose }: SignInModal
             ? "Pushing creates draft Data Marts in your OWOX project, so it needs your OWOX API key."
             : "Connect your OWOX API key to push your model into OWOX Data Marts."}
         </p>
+
+        {/* Product placement: "What is OWOX Data Marts?" — collapsed by default,
+            sits right under the title so it greets first-time users up top. */}
+        <div className="mt-4 rounded-xl border border-[#e6e9f0] bg-[#f7f8fa]">
+          <button
+            onClick={() => setAboutOpen(o => !o)}
+            aria-expanded={aboutOpen}
+            className="flex w-full items-center gap-2 px-4 py-3 text-left text-[13px] font-semibold text-slate-700"
+          >
+            <ChevronRight size={15} className={`text-slate-400 transition-transform ${aboutOpen ? "rotate-90" : ""}`} />
+            What is OWOX Data Marts?
+          </button>
+          {aboutOpen && (
+            <div className="px-4 pb-4">
+              <p className="text-[13px] leading-relaxed text-slate-600">
+                The self-service analytics platform{" "}
+                <a
+                  href="https://owox.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-semibold text-[#4f46e5] hover:underline"
+                >
+                  owox.com
+                </a>{" "}
+                behind this tool.
+              </p>
+              <p className="mt-2 text-[13px] leading-relaxed text-slate-600">
+                Analysts govern the logic once, in one place. Business users self-serve trusted answers in the tools they
+                already use — Sheets, Slack, Teams. No tickets. No hallucinations. Your data never leaves your warehouse.
+              </p>
+
+              <div className="mt-3">
+                <OwoxDataMartsHero />
+              </div>
+
+              <p className="mt-3 text-[12px] leading-relaxed text-slate-500">
+                Sources stay in your warehouse. Analysts model the business once — customers, orders, revenue — in SQL
+                they own. Business users and AI agents query the model, never the raw tables. Trusted answers land in the
+                tools they already use.
+              </p>
+            </div>
+          )}
+        </div>
 
         <label className="mt-5 block text-xs font-semibold uppercase tracking-wide text-slate-500">API key</label>
         <input
