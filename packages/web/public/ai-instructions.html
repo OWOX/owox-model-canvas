@@ -4,20 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<title>OWOX Model Canvas — OKF authoring guide for AI agents</title>
+<title>OWOX Model Canvas — build a data model with AI</title>
 <style>
-  :root { --ink:#0f172a; --muted:#64748b; --line:#e2e8f0; --accent:#4f46e5; --bg:#f7f8fa; --code-bg:#0f172a; }
+  :root { --ink:#0f172a; --muted:#64748b; --line:#e2e8f0; --accent:#1e88e5; --bg:#f7f8fa; --code-bg:#0f172a; }
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--ink);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif; line-height:1.6; }
-  .wrap { max-width:840px; margin:0 auto; padding:48px 24px 96px; }
-  header { display:flex; align-items:center; gap:12px; margin-bottom:8px; }
+  .wrap { max-width:820px; margin:0 auto; padding:56px 24px 96px; }
+  header { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
   header .logo { width:30px; height:30px; }
-  h1 { font-size:26px; margin:0; letter-spacing:-0.3px; }
-  .lead { color:var(--muted); font-size:15px; margin:6px 0 32px; }
-  h2 { font-size:19px; margin:36px 0 10px; padding-top:18px; border-top:1px solid var(--line); }
+  h1 { font-size:27px; margin:0; letter-spacing:-0.3px; }
+  .lead { color:var(--muted); font-size:16px; margin:8px 0 28px; }
+  h2 { font-size:18px; margin:38px 0 12px; }
   h3 { font-size:15px; margin:22px 0 6px; }
   p, li { font-size:14.5px; }
+  a { color:var(--accent); }
   code { background:#eef1f5; padding:1px 5px; border-radius:4px; font-size:13px;
     font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
   pre { background:var(--code-bg); color:#e2e8f0; padding:16px 18px; border-radius:10px; overflow-x:auto;
@@ -26,9 +27,25 @@
   table { border-collapse:collapse; width:100%; font-size:13.5px; margin:10px 0; }
   th, td { border:1px solid var(--line); padding:7px 10px; text-align:left; }
   th { background:#fff; }
-  a { color:var(--accent); }
-  .note { background:#eef0fe; border:1px solid #c7d2fe; border-radius:10px; padding:12px 16px; font-size:13.5px; margin:14px 0; }
+  .copy-row { display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin:8px 0 4px; }
+  .btn { display:inline-flex; align-items:center; gap:8px; background:#1e88e5; color:#fff; border:none; border-radius:10px;
+    padding:11px 18px; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; }
+  .btn:hover { background:#1976d2; }
+  .btn svg { width:16px; height:16px; }
+  .copy-hint { color:var(--muted); font-size:13.5px; }
+  ol.steps { counter-reset:step; list-style:none; padding:0; margin:6px 0 0; }
+  ol.steps > li { position:relative; padding:0 0 18px 46px; }
+  ol.steps > li::before { counter-increment:step; content:counter(step);
+    position:absolute; left:0; top:0; width:30px; height:30px; border-radius:50%;
+    background:#e6f1fb; color:#1e88e5; font-weight:700; font-size:14px;
+    display:flex; align-items:center; justify-content:center; }
+  ol.steps b { display:block; font-size:15px; margin-bottom:2px; }
+  ol.steps p { margin:0; color:var(--muted); font-size:14px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:12px; padding:18px 20px; margin:14px 0; }
+  .note { background:#e8f2fc; border:1px solid #bfdcf6; border-radius:10px; padding:12px 16px; font-size:13.5px; margin:14px 0; }
   .chip { display:inline-block; background:#fff; border:1px solid var(--line); border-radius:6px; padding:1px 7px; font-size:12px; margin:2px 3px 2px 0; font-family:ui-monospace,monospace; }
+  .guide { margin-top:46px; }
+  .guide h2 { font-size:19px; padding-top:18px; border-top:1px solid var(--line); }
   footer { margin-top:48px; color:var(--muted); font-size:13px; }
 </style>
 </head>
@@ -36,8 +53,45 @@
 <div class="wrap">
   <header>
     <svg class="logo" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M421.311 119.85C435.258 133.807 440.996 157.327 440.996 157.327C440.996 157.327 449.53 204.69 449.53 268.995C449.53 177.972 418.65 162.348 311.314 162.348H212.327C157.38 162.348 161.097 217.57 157.38 243.85L152.865 283.556C150.697 325.33 157.951 351.215 200.811 351.215C111.444 351.215 61.806 365.847 61.8062 239.866C61.8061 182.846 70.4043 157.327 70.4043 157.327C70.4043 157.327 76.1419 133.807 90.1183 119.85C104.095 105.877 124.809 104.475 124.809 104.475C124.809 104.475 167.579 98.0374 252.066 98.0374C336.554 98.0374 384.285 104.475 384.285 104.475C384.285 104.475 407.321 105.877 421.311 119.85Z" fill="#1E88E5"/><path d="M449.515 271.888C449.52 273.026 449.523 274.174 449.523 275.333C449.523 329.946 441.393 351.201 441.393 351.201C441.393 351.201 435.03 376.952 424.167 388.075C406.929 405.725 388.495 406.71 388.495 406.71C388.495 406.71 348.836 413.061 263.502 413.061C181.632 413.061 127.111 406.749 127.111 406.749C127.111 406.749 104.091 405.337 90.1144 391.377C76.1379 377.394 70.4004 351.201 70.4004 351.201C70.4004 351.201 61.8062 297.401 61.8062 238.506C61.806 352.055 102.131 351.374 175.525 350.133C183.56 349.998 191.992 349.855 200.811 349.855H299.787C343.122 349.855 352.906 318.315 354.792 282.196L359.32 227.093C360.526 204.443 357.608 188.362 350.507 178.012C342.765 166.722 329.575 160.987 311.314 160.987C424.974 160.987 448.73 176.216 449.515 271.888Z" fill="#0046F9"/></svg>
-    <h1>OWOX Model Canvas — OKF authoring guide</h1>
+    <h1>Build a data model with AI</h1>
   </header>
+  <p class="lead">Don't want to draw it by hand? Let Claude, ChatGPT or Gemini sketch a starter model from a plain description of your business — then import it here and push it into <a href="https://www.owox.com" target="_blank" rel="noopener">OWOX Data Marts</a> in one click.</p>
+
+  <div class="copy-row">
+    <button class="btn" id="copy-btn" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      <span id="copy-label">Copy AI instructions</span>
+    </button>
+    <span class="copy-hint">Then paste them into Claude, ChatGPT or Gemini.</span>
+  </div>
+
+  <h2>How it works</h2>
+  <ol class="steps">
+    <li>
+      <b>Copy the instructions</b>
+      <p>Use the button above — it copies a short brief that teaches the AI our format.</p>
+    </li>
+    <li>
+      <b>Paste into Claude, ChatGPT or Gemini and describe your data</b>
+      <p>Tell it about your business and the tables you have ("we're an e‑commerce shop with customers, orders and products…"). It replies with a ready‑to‑import model.</p>
+    </li>
+    <li>
+      <b>Import it here, then Push to OWOX</b>
+      <p>Open <b>Import</b> on the canvas, paste what the AI gave you, check the graph looks right, and click <b>Push to OWOX</b> to create the draft Data Marts.</p>
+    </li>
+  </ol>
+
+  <div class="card">
+    Prefer to start from something ready‑made? You don't need AI at all — open <b>Templates</b> on the canvas and roll out a model for your industry, or just draw one yourself.
+  </div>
+
+  <p style="color:var(--muted);font-size:13.5px;margin-top:28px;">
+    Want the exact format the assistant follows? It's spelled out in full below — and also lives, copy‑ready, at
+    <a href="/okf-format.md">/okf-format.md</a>.
+  </p>
+
+  <!-- ── Full technical authoring guide (the format the AI follows) ───────── -->
+  <section class="guide">
   <p class="lead">Instructions for an AI agent (Claude, Codex, Gemini, …) to generate a data model in <b>OKF</b> that imports cleanly into OWOX Model Canvas and pushes to OWOX Data Marts in one click.</p>
 
   <div class="note">
@@ -204,8 +258,10 @@ tags: ["owox", "view"]
   <div class="note">
     <b>Rules of thumb.</b> Keep titles distinct (the slug wires relationships). Use only the allowed schema types. Mark one <code>PK.</code> per mart and reference real fields in joins. Leave <b>ID</b>/<b>Storage</b> as <code>—</code> — the canvas fills them.
   </div>
+  </section>
 
-  <footer>OWOX Model Canvas · OKF authoring profile. Built on the Open Knowledge Format.</footer>
+  <footer>OWOX Model Canvas · a free, anonymous canvas for designing <a href="https://www.owox.com" target="_blank" rel="noopener">OWOX Data Marts</a>. Built on the Open Knowledge Format.</footer>
 </div>
+<script src="/ai-instructions.js" defer></script>
 </body>
 </html>
