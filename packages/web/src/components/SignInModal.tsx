@@ -66,7 +66,7 @@ export function SignInModal({ mode, connect, onConnected, onClose }: SignInModal
                   href="https://owox.com"
                   target="_blank"
                   rel="noreferrer"
-                  className="font-semibold text-[#4f46e5] hover:underline"
+                  className="font-semibold text-[#1e88e5] hover:underline"
                 >
                   owox.com
                 </a>{" "}

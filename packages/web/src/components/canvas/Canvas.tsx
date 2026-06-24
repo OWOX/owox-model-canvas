@@ -477,7 +477,7 @@ function CanvasInner() {
       )}
       {showWelcome && (
         <WelcomeDialog
-          onUseTemplate={g => { handleUseTemplate(g); setShowWelcome(false); }}
+          onUseTemplate={(g, name) => { handleUseTemplate(g, name); setShowWelcome(false); }}
           onStartBlank={() => setShowWelcome(false)}
           onImport={() => { setShowWelcome(false); setShowImport(true); }}
         />

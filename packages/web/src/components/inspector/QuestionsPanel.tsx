@@ -41,7 +41,7 @@ export function QuestionsPanel({ node, nodes, edges, goal, onEditGoal }: Questio
     }
   }, [goal, nodes, edges, node.key]);
 
-  const primaryBtn = "w-full text-[13px] font-[550] bg-[#4f46e5] text-white rounded-lg px-4 py-2 cursor-pointer hover:bg-[#4338ca] flex items-center justify-center gap-[6px]";
+  const primaryBtn = "w-full text-[13px] font-[550] bg-[#1e88e5] text-white rounded-lg px-4 py-2 cursor-pointer hover:bg-[#1976d2] flex items-center justify-center gap-[6px]";
 
   return (
     <div className="mt-4 pt-4 border-t border-[#d8dee8]">
@@ -76,13 +76,13 @@ export function QuestionsPanel({ node, nodes, edges, goal, onEditGoal }: Questio
           {state.kind === "limit" && (
             <div className="text-[12px] text-slate-500">
               Ooops! The free AI API limit has been reached for today. Try again later.{" "}
-              {goal && <button onClick={() => void generate(true)} className="text-[#4f46e5] hover:underline cursor-pointer">Retry</button>}
+              {goal && <button onClick={() => void generate(true)} className="text-[#1e88e5] hover:underline cursor-pointer">Retry</button>}
             </div>
           )}
           {state.kind === "error" && (
             <div className="text-[12px] text-slate-500">
               Couldn't generate questions.{" "}
-              {goal && <button onClick={() => void generate(true)} className="text-[#4f46e5] hover:underline cursor-pointer">Try again</button>}
+              {goal && <button onClick={() => void generate(true)} className="text-[#1e88e5] hover:underline cursor-pointer">Try again</button>}
             </div>
           )}
           {state.kind === "ready" && (
@@ -102,7 +102,7 @@ export function QuestionsPanel({ node, nodes, edges, goal, onEditGoal }: Questio
               <>
                 Based on niche <span className="font-semibold text-slate-700">{goal.niche}</span> → goal{" "}
                 <span className="font-semibold text-slate-700">{goal.goal}</span>.{" "}
-                <button onClick={onEditGoal} className="text-[#4f46e5] hover:underline cursor-pointer">Edit</button>
+                <button onClick={onEditGoal} className="text-[#1e88e5] hover:underline cursor-pointer">Edit</button>
               </>
             ) : (
               // The prominent CTA above already opens the goal dialog — no second link here.

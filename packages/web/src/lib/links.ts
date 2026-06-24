@@ -18,5 +18,5 @@ export function signupUrl(placement: string): string {
 }
 
 // Guide for importing an existing model (OKF bundle / OWOX project) into the
-// canvas. TODO(marketing): point at the final public import guide URL.
-export const IMPORT_GUIDE_URL = "https://docs.owox.com/";
+// canvas — the same AI-instructions page linked from the Import OKF dialog.
+export const IMPORT_GUIDE_URL = "/ai-instructions.html";

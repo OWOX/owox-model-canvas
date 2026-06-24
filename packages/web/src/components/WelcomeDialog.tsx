@@ -6,7 +6,7 @@ import { IMPORT_GUIDE_URL } from "../lib/links";
 
 interface Props {
   /** Roll a template onto the canvas. */
-  onUseTemplate: (graph: ModelGraph) => void;
+  onUseTemplate: (graph: ModelGraph, name: string) => void;
   /** Dismiss and start from an empty canvas. */
   onStartBlank: () => void;
   /** Open the OKF import flow. */
@@ -48,7 +48,7 @@ export function WelcomeDialog({ onUseTemplate, onStartBlank, onImport }: Props) 
               </div>
               <span className="text-[11px] text-slate-500 whitespace-nowrap">{t.graph.nodes.length} marts · {t.graph.edges.length} links</span>
               <button
-                onClick={() => onUseTemplate(structuredClone(t.graph))}
+                onClick={() => onUseTemplate(structuredClone(t.graph), t.name)}
                 title={`Roll out the ${t.name} model`}
                 className="flex items-center gap-[6px] rounded-lg bg-[#1e88e5] px-3 py-[6px] text-[12px] font-semibold text-white hover:bg-[#1976d2] whitespace-nowrap"
               >

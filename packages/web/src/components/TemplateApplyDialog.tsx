@@ -56,7 +56,7 @@ export function TemplateApplyDialog({ graph, name, onConfirm, onClose }: Templat
           </button>
           <button
             onClick={() => onConfirm(mode)}
-            className="text-[13px] font-[550] bg-[#4f46e5] text-white border border-[#4f46e5] rounded-lg px-4 py-[7px] cursor-pointer hover:bg-[#4338ca]"
+            className="text-[13px] font-[550] bg-[#1e88e5] text-white border border-[#1e88e5] rounded-lg px-4 py-[7px] cursor-pointer hover:bg-[#1976d2]"
           >
             Apply
           </button>

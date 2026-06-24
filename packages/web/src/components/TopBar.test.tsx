@@ -12,16 +12,6 @@ describe("TopBar", () => {
     expect(screen.queryByRole("combobox")).toBeNull(); // storage <select> hidden
   });
 
-  it("shows a free-signup CTA when anonymous and hides it when signed in", () => {
-    const { rerender } = render(<TopBar signedIn={false} storages={storages} />);
-    const link = screen.getByText("Start free").closest("a") as HTMLAnchorElement;
-    expect(link.href).toContain("owox.com/app-signup");
-    expect(link.href).toContain("utm_content=topbar");
-
-    rerender(<TopBar signedIn projectTitle="Demo" storages={storages} storageId="s1" />);
-    expect(screen.queryByText("Start free")).toBeNull();
-  });
-
   it("shows Sign out and the storage picker when signed in", () => {
     render(<TopBar signedIn projectTitle="Demo" storages={storages} storageId="s1" />);
     expect(screen.getByText("Sign out")).toBeTruthy();

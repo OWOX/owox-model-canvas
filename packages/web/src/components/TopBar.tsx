@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Download, Upload, ChevronDown, Target } from "lucide-react";
 import { ProjectIcon, StorageIcon, LibraryIcon } from "../lib/icons";
-import { signupUrl } from "../lib/links";
 
 // First-visit onboarding hint pointing at the Library. Persisted so it only
 // ever shows once per browser; dismissed as soon as the user hovers it.
@@ -214,26 +213,12 @@ export function TopBar({
           Sign out
         </button>
       ) : (
-        <>
-          {/* Conversion bridge for non-customers: the canvas is free and
-              anonymous; this routes "I like this — how do I get OWOX?" to the
-              free signup with campaign attribution. */}
-          <a
-            href={signupUrl("topbar")}
-            target="_blank"
-            rel="noopener"
-            title="Create a free OWOX account"
-            className="text-[13px] font-[550] border border-[#1e88e5] text-[#1e88e5] bg-white rounded-lg px-3 py-[7px] cursor-pointer hover:bg-[#e6f1fb] flex items-center"
-          >
-            Start free
-          </a>
-          <button
-            onClick={onSignIn}
-            className="text-[13px] font-[550] border border-[#d8dee8] bg-white text-slate-900 rounded-lg px-3 py-[7px] cursor-pointer hover:bg-[#f1f3f7]"
-          >
-            Sign in
-          </button>
-        </>
+        <button
+          onClick={onSignIn}
+          className="text-[13px] font-[550] border border-[#d8dee8] bg-white text-slate-900 rounded-lg px-3 py-[7px] cursor-pointer hover:bg-[#f1f3f7]"
+        >
+          Sign in
+        </button>
       )}
     </div>
   );
