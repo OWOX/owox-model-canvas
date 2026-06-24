@@ -15,7 +15,7 @@ export function LibraryDialog({ onUse, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={onClose}>
       <div
-        className="w-[620px] flex flex-col rounded-2xl border border-[#d8dee8] bg-white shadow-2xl"
+        className="w-[620px] max-h-[88vh] flex flex-col overflow-hidden rounded-2xl border border-[#d8dee8] bg-white shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 px-5 py-4 border-b border-[#d8dee8] flex-shrink-0">
@@ -24,7 +24,7 @@ export function LibraryDialog({ onUse, onClose }: Props) {
           <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><X size={18} /></button>
         </div>
 
-        <div className="overflow-y-auto p-3 flex flex-col gap-2" style={{ maxHeight: "calc(85vh - 64px)" }}>
+        <div className="flex-1 min-h-0 overflow-y-auto p-3 flex flex-col gap-2">
           {TEMPLATES.map(t => (
             <TemplateRow
               key={t.id}
@@ -43,7 +43,7 @@ export function LibraryDialog({ onUse, onClose }: Props) {
 function TemplateRow({ template, open, onToggle, onUse }: { template: Template; open: boolean; onToggle: () => void; onUse: () => void }) {
   const { nodes, edges } = template.graph;
   return (
-    <div className="rounded-xl border border-[#e2e6ec] overflow-hidden">
+    <div className="shrink-0 rounded-xl border border-[#e2e6ec] overflow-hidden">
       <div onClick={onToggle} role="button" className="flex items-center gap-3 px-4 py-3 hover:bg-[#f8fafc] text-left cursor-pointer">
         {open ? <ChevronDown size={16} className="text-slate-400 flex-shrink-0" /> : <ChevronRight size={16} className="text-slate-400 flex-shrink-0" />}
         <div className="flex-1 min-w-0">
