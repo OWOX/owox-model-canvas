@@ -1,10 +1,12 @@
-import type { ModelGraph, ModelNode, ModelEdge, InputSource, Cardinality } from "./types";
+import type { ModelGraph, ModelNode, ModelEdge, InputSource, Cardinality, SchemaField } from "./types";
 import { parseFrontmatter } from "./slug";
 
 const FLIP_CARDINALITY: Record<Cardinality, Cardinality> = { "1:1": "1:1", "N:N": "N:N", "1:N": "N:1", "N:1": "1:N" };
 
 export function parseBundle(files: Record<string, string>): ModelGraph {
-  const docs = Object.entries(files).filter(([p]) => p.endsWith(".md") && !p.endsWith("index.md"));
+  const docs = Object.entries(files)
+    .filter(([p]) => p.endsWith(".md") && !p.endsWith("index.md"))
+    .filter(([, text]) => isMartDoc(text));
   const nodes: ModelNode[] = []; const slugToKey = new Map<string, string>();
   const pkByKey = new Map<string, string | undefined>();
   for (const [path, text] of docs) {
@@ -17,7 +19,7 @@ export function parseBundle(files: Record<string, string>): ModelGraph {
     slugToKey.set(fileSlug, key);
     const schema = parseSchema(body);
     pkByKey.set(key, schema.find(f => f.pk)?.name);
-    const inputSource = (owox.inputSource || ov.definitionType || inferSource(data.tags) || "SQL") as InputSource;
+    const inputSource = (owox.inputSource || ov.definitionType || inferSource(data.tags) || sourceFromType(data.type) || "SQL") as InputSource;
     const owoxId = owox.id ?? (ov.id && ov.id !== "—" ? ov.id : null);
     nodes.push({
       key, title, inputSource,
@@ -72,6 +74,23 @@ export function parseBundle(files: Record<string, string>): ModelGraph {
 function inferSource(tags: unknown): InputSource | undefined {
   const list = (Array.isArray(tags) ? tags : []).map(t => String(t).toUpperCase());
   return (["SQL", "CONNECTOR", "VIEW", "TABLE"] as const).find(s => list.includes(s));
+}
+
+// A doc is a mart unless its OKF type marks it as a non-table reference/dataset.
+// OWOX docs (type: "OWOX Data Mart") and untyped docs are always marts.
+const NON_MART_TYPE = /^(reference|bigquery dataset)\b/i;
+function isMartDoc(text: string): boolean {
+  const t = parseFrontmatter(text).data.type;
+  return !(typeof t === "string" && NON_MART_TYPE.test(t.trim()));
+}
+
+// Map Google's frontmatter type onto our InputSource. OWOX docs never reach the
+// "SQL" fallback via this path because they carry owox.inputSource/Overview.
+function sourceFromType(type: unknown): InputSource | undefined {
+  const t = String(type ?? "").toLowerCase();
+  if (t.startsWith("bigquery view")) return "VIEW";
+  if (t.startsWith("bigquery table")) return "TABLE";
+  return undefined;
 }
 
 function parseOverview(body: string): { id?: string; status?: string; definitionType?: string } {
