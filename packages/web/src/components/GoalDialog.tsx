@@ -81,7 +81,7 @@ export function GoalDialog({ current, suggestedNiche, onConfirm, onClear, onClos
             <div className="text-[12px] leading-[1.5] text-[#065f46]">
               <strong className="font-semibold">Goal applied.</strong> Select any data mart on the
               canvas to see its <em className="not-italic font-medium">“Questions this unlocks”</em>{" "}
-              section and generate questions.
+              section and get question ideas.
             </div>
           </div>
         )}

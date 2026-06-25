@@ -11,7 +11,7 @@ const node: ModelNode = {
 };
 const GOAL = { niche: "E-commerce / Retail", goal: "Increase ROAS while holding CPC" };
 
-const gen = () => screen.getByRole("button", { name: /generate based on business goal/i });
+const gen = () => screen.getByRole("button", { name: /get question ideas/i });
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -43,12 +43,12 @@ describe("QuestionsPanel", () => {
     expect(await screen.findByText(/free AI API limit has been reached/i)).toBeTruthy();
   });
 
-  it("re-fetches with force when Regenerate is clicked", async () => {
+  it("re-fetches with force when Refresh is clicked", async () => {
     const spy = vi.spyOn(qlib, "getQuestions").mockResolvedValue([{ question: "Q", unlockedBy: "U" }]);
     render(<QuestionsPanel node={node} nodes={[node]} edges={[]} goal={GOAL} onEditGoal={() => {}} />);
     fireEvent.click(gen());
     await screen.findByText("Q");
-    fireEvent.click(screen.getByRole("button", { name: /regenerate/i }));
+    fireEvent.click(screen.getByRole("button", { name: /refresh/i }));
     await waitFor(() => expect(spy).toHaveBeenCalledWith(expect.anything(), GOAL, { force: true }));
   });
 
@@ -56,7 +56,7 @@ describe("QuestionsPanel", () => {
     const spy = vi.spyOn(qlib, "getQuestions");
     const onEditGoal = vi.fn();
     render(<QuestionsPanel node={node} nodes={[node]} edges={[]} goal={null} onEditGoal={onEditGoal} />);
-    fireEvent.click(screen.getByRole("button", { name: /set business goal/i }));
+    fireEvent.click(screen.getByRole("button", { name: /set goal to get ideas/i }));
     expect(onEditGoal).toHaveBeenCalledTimes(1);
     expect(spy).not.toHaveBeenCalled();
   });
@@ -74,6 +74,6 @@ describe("QuestionsPanel", () => {
     const empty = { ...node, schema: [] };
     render(<QuestionsPanel node={empty} nodes={[empty]} edges={[]} goal={GOAL} onEditGoal={() => {}} />);
     expect(screen.getByText(/Add fields or a description/i)).toBeTruthy();
-    expect(screen.queryByRole("button", { name: /generate based on business goal/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /get question ideas/i })).toBeNull();
   });
 });

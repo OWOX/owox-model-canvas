@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { Sparkles } from "lucide-react";
+import { Lightbulb } from "lucide-react";
 import type { ModelNode, ModelEdge } from "@mc/okf";
 import type { BusinessGoal } from "../../state/goal";
 import { buildFocus, getQuestions, AiLimitError, type InsightQuestion } from "../../lib/questions";
@@ -49,7 +49,7 @@ export function QuestionsPanel({ node, nodes, edges, goal, onEditGoal }: Questio
         <h4 className="text-[11px] font-semibold text-slate-500 uppercase tracking-[0.3px] flex-1">Questions this unlocks</h4>
         {state.kind === "ready" && (
           <button onClick={() => void generate(true)} className="text-[11px] text-[#1e88e5] hover:underline cursor-pointer">
-            Regenerate
+            Refresh
           </button>
         )}
       </div>
@@ -62,11 +62,11 @@ export function QuestionsPanel({ node, nodes, edges, goal, onEditGoal }: Questio
           {state.kind === "idle" && (
             goal ? (
               <button onClick={() => void generate(false)} className={primaryBtn}>
-                <Sparkles size={15} /> Generate based on business goal
+                <Lightbulb size={15} /> Get question ideas
               </button>
             ) : (
               <button onClick={onEditGoal} className={primaryBtn}>
-                <Sparkles size={15} /> Set business goal &amp; generate
+                <Lightbulb size={15} /> Set goal to get ideas
               </button>
             )
           )}
