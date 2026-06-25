@@ -34,9 +34,7 @@ That's what sets the canvas apart from generic ERD tools: the diagram is just a 
 
 # Development
 
-A Miro-like canvas where drawing a data model creates draft OWOX Data Marts and joinable relationships via the OWOX API, with OKF import/export. A free, **anonymous-first** lead-gen tool: the whole canvas works without signing in — an OWOX API key is needed only to **Push** the model into OWOX.
-
-See `docs/superpowers/specs/` for the design and `docs/superpowers/plans/` for the implementation plan. The approved interaction/visual reference is `docs/superpowers/prototype/canvas.html`.
+A Miro-like canvas where drawing a data model creates draft OWOX Data Marts and joinable relationships via the OWOX API, with OKF import/export. A free, **anonymous-first** tool: the whole canvas works without signing in — an OWOX API key is needed only to **Push** the model into OWOX.
 
 ## Layout (pnpm monorepo)
 
@@ -90,3 +88,17 @@ The BFF is a thin proxy in front of the OWOX API. Hardening:
 - **Session TTL + hard cap**: in-memory sessions expire and are bounded so abuse can't exhaust memory.
 
 Per-session tenant isolation: every OWOX call uses the caller's own token, so users never see each other's data. Known tradeoff: the OWOX key lives in `localStorage`, so an XSS would expose it — CSP is the primary mitigation.
+
+## Contributing
+
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for setup, tests, and the PR flow. By participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Reporting a vulnerability
+
+Please report security issues privately — see [SECURITY.md](SECURITY.md). Don't open a public issue for a vulnerability.
+
+## License
+
+[Apache License 2.0](LICENSE) — © 2026 OWOX, Inc. See [NOTICE](NOTICE).
+
+> "Open Knowledge Format (OKF)" is an open specification published by Google. OWOX Model Canvas reads and writes that format but is an independent, community project — not affiliated with or endorsed by Google.

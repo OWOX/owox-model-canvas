@@ -1,6 +1,7 @@
 {
   "name": "owox-model-canvas",
   "private": true,
+  "license": "Apache-2.0",
   "scripts": {
     "dev": "pnpm --filter @mc/server dev",
     "dev:web": "pnpm --filter @mc/web dev",
