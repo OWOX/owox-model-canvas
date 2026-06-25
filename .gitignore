@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .superpowers/
+.claude/
 .env
 .env.local
 *.log
