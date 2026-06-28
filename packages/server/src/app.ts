@@ -33,7 +33,10 @@ export function buildApp() {
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", "data:", "blob:"],
         fontSrc: ["'self'", "data:"],
-        connectSrc: ["'self'", POSTHOG_PROXY],
+        // Supabase ("sign up to save"): the browser talks to the project's Auth +
+        // REST API directly. Wildcard covers any project (dev/prod) without baking
+        // the ref into the CSP; wss for the (currently unused) realtime channel.
+        connectSrc: ["'self'", POSTHOG_PROXY, "https://*.supabase.co", "wss://*.supabase.co"],
         workerSrc: ["'self'", "blob:"],
         objectSrc: ["'none'"],
         frameAncestors: ["'none'"],

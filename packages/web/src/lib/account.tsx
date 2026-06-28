@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase, supabaseEnabled } from "./supabase";
+import { setAuthRedirecting } from "./authRedirect";
 
 // The Supabase account = the user's identity, used to SAVE models. This is a
 // separate concern from `lib/auth.tsx` (the OWOX API-key "connect" flow used for
@@ -42,11 +43,14 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   // then picks the session out of the URL (detectSessionInUrl) on return.
   const oauth = (provider: "google" | "github") => async () => {
     if (!supabase) return;
+    // We're about to leave the page for the provider — suppress the unsaved-work
+    // "Leave site?" prompt for this intentional navigation.
+    setAuthRedirecting(true);
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: { redirectTo: window.location.origin },
     });
-    if (error) throw error;
+    if (error) { setAuthRedirecting(false); throw error; }
   };
 
   const signInWithEmail = async (email: string) => {

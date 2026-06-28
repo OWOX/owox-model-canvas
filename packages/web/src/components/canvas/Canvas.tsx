@@ -39,6 +39,7 @@ import { api } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import { useAccount } from "../../lib/account";
 import { supabaseEnabled } from "../../lib/supabase";
+import { isAuthRedirecting } from "../../lib/authRedirect";
 import { createModel, updateModel } from "../../lib/models";
 import { AccountDialog } from "../AccountDialog";
 import { MyModelsDialog } from "../MyModelsDialog";
@@ -284,6 +285,7 @@ function CanvasInner() {
   // session and may not all be in OWOX yet.
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
+      if (isAuthRedirecting()) return; // intentional OAuth redirect, not a real exit
       if (!store.get().nodes.some(n => n.status !== "created")) return;
       e.preventDefault();
       e.returnValue = ""; // required for Chrome to show the native prompt
