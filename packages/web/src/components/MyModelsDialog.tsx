@@ -3,7 +3,7 @@ import { Trash2, Pencil, FolderOpen } from "lucide-react";
 import type { ModelGraph } from "@mc/okf";
 import { listModels, loadModel, updateModel, deleteModel, type SavedModel } from "../lib/models";
 
-export function MyModelsDialog({ onOpen, onClose }: { onOpen: (graph: ModelGraph, id: string) => void; onClose: () => void }) {
+export function MyModelsDialog({ onOpen, onClose }: { onOpen: (graph: ModelGraph, id: string, name: string) => void; onClose: () => void }) {
   const [models, setModels] = useState<SavedModel[] | null>(null);
   const [err, setErr] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -15,9 +15,9 @@ export function MyModelsDialog({ onOpen, onClose }: { onOpen: (graph: ModelGraph
   }
   useEffect(() => { void refresh(); }, []);
 
-  async function open(id: string) {
+  async function open(id: string, name: string) {
     setBusyId(id); setErr("");
-    try { onOpen(await loadModel(id), id); onClose(); }
+    try { onOpen(await loadModel(id), id, name); onClose(); }
     catch (e) { setErr((e as Error).message); setBusyId(null); }
   }
   async function remove(id: string) {
@@ -59,12 +59,12 @@ export function MyModelsDialog({ onOpen, onClose }: { onOpen: (graph: ModelGraph
                   className="flex-1 rounded-md border border-[#1e88e5] px-2 py-1 text-[14px] outline-none"
                 />
               ) : (
-                <button onClick={() => open(m.id)} disabled={busyId === m.id} className="flex-1 text-left cursor-pointer disabled:opacity-50">
+                <button onClick={() => open(m.id, m.name)} disabled={busyId === m.id} className="flex-1 text-left cursor-pointer disabled:opacity-50">
                   <div className="text-[14px] font-[550] text-slate-900">{m.name}</div>
                   <div className="text-[12px] text-slate-400">Updated {new Date(m.updated_at).toLocaleString()}</div>
                 </button>
               )}
-              <button title="Open" onClick={() => open(m.id)} disabled={busyId === m.id} className="rounded-md p-1.5 text-slate-400 opacity-0 group-hover:opacity-100 hover:bg-[#e6f1fb] hover:text-[#1e88e5] cursor-pointer"><FolderOpen size={16} /></button>
+              <button title="Open" onClick={() => open(m.id, m.name)} disabled={busyId === m.id} className="rounded-md p-1.5 text-slate-400 opacity-0 group-hover:opacity-100 hover:bg-[#e6f1fb] hover:text-[#1e88e5] cursor-pointer"><FolderOpen size={16} /></button>
               <button title="Rename" onClick={() => setRenaming({ id: m.id, name: m.name })} className="rounded-md p-1.5 text-slate-400 opacity-0 group-hover:opacity-100 hover:bg-[#f1f3f7] hover:text-slate-700 cursor-pointer"><Pencil size={15} /></button>
               <button title="Delete" onClick={() => remove(m.id)} disabled={busyId === m.id} className="rounded-md p-1.5 text-slate-400 opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-600 cursor-pointer"><Trash2 size={15} /></button>
             </div>

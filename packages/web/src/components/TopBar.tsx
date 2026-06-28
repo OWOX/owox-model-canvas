@@ -29,6 +29,9 @@ export interface TopBarProps {
   onOpenGoal?: () => void;
   goalSet?: boolean;
   questionsEnabled?: boolean;
+  // Editable model name, shown next to the brand and used as the Save default.
+  modelName?: string;
+  onRenameModel?: (name: string) => void;
   // Supabase account ("Save"). Independent of the OWOX connect/sign-in above.
   supabaseEnabled?: boolean;
   accountEmail?: string | null;
@@ -67,12 +70,23 @@ export function TopBar({
   onShare, shareDisabled = false, onPush, onLibrary,
   signedIn, projectTitle, onSignIn, onSignOut,
   onOpenGoal, goalSet = false, questionsEnabled = false,
+  modelName, onRenameModel,
   supabaseEnabled = false, accountEmail, onSave, saving = false, onMyModels, onAccountSignOut,
 }: TopBarProps) {
   // Push split-button menu (holds the signed-in "Import from OWOX project" action).
   const [menuOpen, setMenuOpen] = useState(false);
   // Supabase account dropdown.
   const [acctOpen, setAcctOpen] = useState(false);
+  // Inline model-name editing.
+  const [editingName, setEditingName] = useState(false);
+  const [draftName, setDraftName] = useState(modelName ?? "");
+  useEffect(() => { setDraftName(modelName ?? ""); }, [modelName]);
+  const commitName = () => {
+    setEditingName(false);
+    const n = draftName.trim();
+    if (n && n !== modelName) onRenameModel?.(n);
+    else setDraftName(modelName ?? "");
+  };
   // Export dropdown (OKF markdown / PNG / SVG).
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   // Show the Library hint on first ever visit; stays lit until hovered.
@@ -101,6 +115,34 @@ export function TopBar({
         </a>
         <span>Model Canvas</span>
       </div>
+
+      {/* Editable model name — click to rename. Used as the Save default. */}
+      {modelName != null && (
+        <>
+          <span className="select-none text-slate-300">/</span>
+          {editingName ? (
+            <input
+              autoFocus
+              value={draftName}
+              onChange={e => setDraftName(e.target.value)}
+              onBlur={commitName}
+              onKeyDown={e => {
+                if (e.key === "Enter") commitName();
+                if (e.key === "Escape") { setDraftName(modelName); setEditingName(false); }
+              }}
+              className="w-[260px] rounded-md border border-[#1e88e5] px-2 py-[3px] text-[13px] font-[550] text-slate-900 outline-none"
+            />
+          ) : (
+            <button
+              onClick={() => setEditingName(true)}
+              title="Rename model"
+              className="max-w-[280px] cursor-text truncate rounded-md px-2 py-[3px] text-[13px] font-[550] text-slate-700 hover:bg-[#f1f3f7]"
+            >
+              {modelName}
+            </button>
+          )}
+        </>
+      )}
 
       {/* Business Goal — entry point for Insight Questions. Hidden unless the
           server reports GEMINI_API_KEY is set (questionsEnabled), so it's a pure

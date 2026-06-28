@@ -25,6 +25,7 @@ import { X, Sparkles, MessageSquare } from "lucide-react";
 import { createModelStore } from "../../state/model";
 import { loadPersistedGraph, persistGraph } from "../../state/persist";
 import { loadViewMode, persistViewMode, type ViewMode } from "../../state/viewMode";
+import { loadModelName, persistModelName, DEFAULT_MODEL_NAME, templateModelName } from "../../state/modelName";
 import type { ModelNode, ModelEdge, ModelGraph } from "@mc/okf";
 
 import { graphToBundleFiles, downloadBundle } from "../../okf/io";
@@ -200,6 +201,9 @@ function CanvasInner() {
   // The id of the saved model currently open (so Save updates it instead of
   // creating a duplicate). Reset on Clear / opening a different model.
   const [savedModelId, setSavedModelId] = useState<string | null>(null);
+  // Editable model name (shown in the top bar, used as the Save default).
+  const [modelName, setModelName] = useState(loadModelName());
+  useEffect(() => { persistModelName(modelName); }, [modelName]);
 
   // Load the project's storages once signed in; retry through OWOX's transient
   // 500s. Anonymous users have no session, so we skip the call entirely and
@@ -395,6 +399,7 @@ function CanvasInner() {
     setSelection(null);
     setShowClear(false);
     setSavedModelId(null); // a cleared canvas is a fresh model — next Save creates a new row
+    setModelName(DEFAULT_MODEL_NAME);
   }, []);
 
   const handleExportAndClear = useCallback(() => {
@@ -476,12 +481,11 @@ function CanvasInner() {
     setSaving(true);
     try {
       const graph = store.get();
+      const name = modelName.trim() || DEFAULT_MODEL_NAME;
       if (savedModelId) {
-        await updateModel(savedModelId, { graph });
+        await updateModel(savedModelId, { name, graph });
       } else {
-        const name = window.prompt("Name this model:", "Untitled model");
-        if (name === null) return; // cancelled
-        const id = await createModel(name.trim() || "Untitled model", graph);
+        const id = await createModel(name, graph);
         setSavedModelId(id);
       }
       setShareToast("Model saved");
@@ -490,13 +494,14 @@ function CanvasInner() {
     } finally {
       setSaving(false);
     }
-  }, [account, savedModelId]);
+  }, [account, savedModelId, modelName]);
 
   // Open a saved model. It already carries layout positions, so load it straight
   // in (no re-layout) and remember its id so the next Save updates it.
-  const handleOpenSaved = useCallback((g: ModelGraph, id: string) => {
+  const handleOpenSaved = useCallback((g: ModelGraph, id: string, name: string) => {
     store.set({ ...g });
     setSavedModelId(id);
+    setModelName(name);
   }, []);
 
   const handleUseTemplate = useCallback((g: ModelGraph, name: string) => {
@@ -506,6 +511,8 @@ function CanvasInner() {
     // Merge first (mirrors the OKF/OWOX import dialogs) so existing work isn't
     // silently wiped.
     if (store.get().nodes.length === 0) {
+      setModelName(templateModelName(name)); // "My {template} OKF with OWOX"
+      setSavedModelId(null); // a fresh model from a template, not the open saved one
       applyTemplate(g, "replace");
       setShowLibrary(false);
     } else {
@@ -514,7 +521,12 @@ function CanvasInner() {
   }, [applyTemplate]);
 
   const handleTemplateApplyConfirm = useCallback((mode: "replace" | "merge") => {
-    if (pendingTemplate) applyTemplate(pendingTemplate.graph, mode);
+    if (pendingTemplate) {
+      // Replacing = a fresh model from this template, so re-seed the name; merging
+      // keeps the current model (and its name) and just folds the template in.
+      if (mode === "replace") { setModelName(templateModelName(pendingTemplate.name)); setSavedModelId(null); }
+      applyTemplate(pendingTemplate.graph, mode);
+    }
     setPendingTemplate(null);
     setShowLibrary(false);
   }, [pendingTemplate, applyTemplate]);
@@ -593,6 +605,8 @@ function CanvasInner() {
         projectTitle={me?.projectTitle}
         onSignIn={() => setSignIn({ mode: "connect" })}
         onSignOut={handleSignOut}
+        modelName={modelName}
+        onRenameModel={setModelName}
         supabaseEnabled={supabaseEnabled}
         accountEmail={account?.email ?? null}
         onSave={handleSave}
