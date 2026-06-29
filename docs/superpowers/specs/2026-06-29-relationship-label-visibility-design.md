@@ -132,10 +132,13 @@ This needs no change to ERD edge *routing* — only label rendering is affected.
 
 ## Edge cases
 
-- Edge with zero keys at all: today it renders no key text; cardinality shows if
-  present. Under `defined`/`undefined`/`hidden` with no keys, cardinality follows
-  the "iff a key is shown" rule → hidden. Under `all`, cardinality shows if set
-  (unchanged from today's "label || cardinality" guard, now governed by the rule).
+- Edge with zero keys at all: there is nothing for the filter to remove, so the
+  cardinality badge shows in every non-hidden mode (`all`/`defined`/`undefined`)
+  and is hidden only in `hidden` mode — see the "no keys" branch of
+  `showCardinality`. This case is unreachable for canvas-created edges (a new edge
+  is seeded with one unset key); it is only reachable via imported OKF data, where
+  treating a key-less relationship the same across non-hidden modes is the least
+  surprising behavior.
 - Unknown/stale `localStorage` value → falls back to `all`.
 - Setting changes must re-render existing edges immediately (no reload).
 
