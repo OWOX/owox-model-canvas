@@ -49,11 +49,18 @@ export async function exportCanvasSvg(rfNodes: Node[], filename = "model"): Prom
   const el = document.querySelector<HTMLElement>(".react-flow__viewport");
   if (!el || rfNodes.length === 0) return;
   const { width, height, style } = captureOptions(rfNodes);
-  const dataUrl = await toSvg(el, { backgroundColor: BG, width, height, style, skipFonts: true });
-  // toSvg returns a data: URI — decode, inject the watermark before </svg>.
+  // Don't pass `backgroundColor` here: html-to-image paints it on the cloned
+  // viewport <div>, which carries our translate() transform — so the fill gets
+  // offset with the content and leaves part of the frame uncovered (the two-tone
+  // background bug). Instead we inject a full-frame <rect> below, at (0,0).
+  const dataUrl = await toSvg(el, { width, height, style, skipFonts: true });
+  // toSvg returns a data: URI — decode, then inject a background rect right after
+  // the opening <svg> tag (so it sits behind everything) and the watermark before </svg>.
   const raw = decodeURIComponent(dataUrl.replace(/^data:image\/svg\+xml;charset=utf-8,/, ""));
+  const bgRect = `<rect x="0" y="0" width="${width}" height="${height}" fill="${BG}"/>`;
+  const withBg = raw.replace(/(<svg[^>]*>)/, `$1${bgRect}`);
   const wm = watermarkGroup(width - WM_W - 14, height - WM_H - 14);
-  const withWm = raw.replace(/<\/svg>\s*$/, `${wm}</svg>`);
+  const withWm = withBg.replace(/<\/svg>\s*$/, `${wm}</svg>`);
 
   const blob = new Blob([withWm], { type: "image/svg+xml" });
   const url = URL.createObjectURL(blob);
