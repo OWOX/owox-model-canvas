@@ -41,7 +41,7 @@ import { useAuth } from "../../lib/auth";
 import { useAccount } from "../../lib/account";
 import { supabaseEnabled } from "../../lib/supabase";
 import { isAuthRedirecting } from "../../lib/authRedirect";
-import { createModel, updateModel, createVersion, listModels, loadModel, deleteModel, type SavedModel } from "../../lib/models";
+import { createModel, updateModel, createVersion, listModels, loadModel, deleteModel, listVersions, loadVersion, type SavedModel, type ModelVersion } from "../../lib/models";
 import { AccountDialog } from "../AccountDialog";
 import { MyModelsDialog } from "../MyModelsDialog";
 import { TopBar, type StorageOption } from "../TopBar";
@@ -69,6 +69,8 @@ import { useRightPanel, type RightPanelId } from "../rail/useRightPanel";
 import { EnablePanel } from "../rail/EnablePanel";
 import { AccountPanel } from "../rail/AccountPanel";
 import { MyModelsPanel } from "../rail/MyModelsPanel";
+import { HistoryPanel } from "../rail/HistoryPanel";
+import { DiffDialog } from "../DiffDialog";
 import { GoalDialog } from "../GoalDialog";
 import { loadGoal, persistGoal, type BusinessGoal } from "../../state/goal";
 
@@ -255,6 +257,16 @@ function CanvasInner() {
   const [savedModels, setSavedModels] = useState<SavedModel[]>([]);
   // Bumped on each save so the History rail re-fetches the version list.
   const [versionsBump, setVersionsBump] = useState(0);
+  // Versions for the current model — populated when the History panel opens.
+  const [versions, setVersions] = useState<ModelVersion[]>([]);
+  // A past version's graph staged for the DiffDialog; null = dialog closed.
+  const [historyDiff, setHistoryDiff] = useState<{ prev: ModelGraph; label: string } | null>(null);
+  // Load version list whenever the History panel is active or a new save is made.
+  useEffect(() => {
+    if (panel.active === "history" && account && savedModelId) {
+      listVersions(savedModelId).then(setVersions).catch(() => {});
+    }
+  }, [panel.active, account, savedModelId, versionsBump]); // eslint-disable-line react-hooks/exhaustive-deps
   // Snapshot of the graph (JSON) as it was at the last Save / open — the baseline
   // for "are there unsaved edits?". Comparing against this at click time avoids
   // the races a boolean dirty-flag effect would have (e.g. open's store.set
@@ -618,6 +630,28 @@ function CanvasInner() {
     setShareToast("Version restored to the canvas — Save to keep it.");
   }, []);
 
+  // Load a version by id and show the DiffDialog comparing it to the current canvas.
+  const handleCompare = useCallback(async (id: string) => {
+    try {
+      const prev = await loadVersion(id);
+      const v = versions.find(v => v.id === id);
+      const label = v ? new Date(v.created_at).toLocaleString() : "that version";
+      setHistoryDiff({ prev, label });
+    } catch (e) {
+      setShareToast(`Compare failed: ${(e as Error).message}`);
+    }
+  }, [versions]);
+
+  // Load a version by id and restore it to the canvas.
+  const handleRestoreById = useCallback(async (id: string) => {
+    try {
+      const g = await loadVersion(id);
+      handleRestoreVersion(g);
+    } catch (e) {
+      setShareToast(`Restore failed: ${(e as Error).message}`);
+    }
+  }, [handleRestoreVersion]);
+
   // "New model" from the rail. Nothing to lose → just start fresh: an empty
   // canvas, or a saved model with no edits since its last Save (it's safely in
   // Models). Only confirm when there's genuinely unsaved work on the canvas.
@@ -844,6 +878,14 @@ function CanvasInner() {
           onClose={() => setShowGoal(false)}
         />
       )}
+      {historyDiff && (
+        <DiffDialog
+          prev={historyDiff.prev}
+          next={graph}
+          label={historyDiff.label}
+          onClose={() => setHistoryDiff(null)}
+        />
+      )}
       {signIn && (
         <SignInModal
           mode={signIn.mode}
@@ -992,7 +1034,14 @@ function CanvasInner() {
               onDelete={id => void handleDeleteModel(id)}
             />
           )}
-          {/* share / history panels added in Tasks 5–6 */}
+          {panel.active === "history" && account && (
+            <HistoryPanel
+              versions={versions}
+              onCompare={id => void handleCompare(id)}
+              onRestore={id => void handleRestoreById(id)}
+              signedIn={!!account}
+            />
+          )}
         </ModelSheet>
         <RightRail active={panel.active} onOpen={handleRailOpen} signedIn={!!account} highlightId={visualRailId} />
       </div>
