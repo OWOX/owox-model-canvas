@@ -22,6 +22,13 @@ interface InspectorProps {
   goal?: BusinessGoal | null;
   questionsEnabled?: boolean;
   onEditGoal?: () => void;
+  /**
+   * When true, render ONLY the selection body (ObjectInspector / RelationshipInspector /
+   * QuestionsPanel / EmptyState) — no outer drawer wrapper, border, width, resize handle,
+   * header, or ReopenTab. Used when the Inspector is hosted inside the right ModelSheet.
+   * Default false preserves the standalone drawer behaviour byte-for-byte.
+   */
+  embedded?: boolean;
 }
 
 const MIN_WIDTH = 320;
@@ -65,7 +72,7 @@ function ReopenTab({ onClick }: { onClick: () => void }) {
 }
 
 export function Inspector({
-  selection, nodes, edges, onUpdateNode, onUpdateEdge, onClose, goal, questionsEnabled, onEditGoal,
+  selection, nodes, edges, onUpdateNode, onUpdateEdge, onClose, goal, questionsEnabled, onEditGoal, embedded = false,
 }: InspectorProps) {
   const [open, setOpen] = useState(true);
   const [width, setWidth] = useState(320);
@@ -120,6 +127,47 @@ export function Inspector({
     };
   }, []);
 
+  // Selection body — shared between the standalone drawer and the embedded
+  // (Sheet-hosted) render so editing behaviour is identical in both.
+  const body = selectedNode ? (
+    <>
+      <ObjectInspector
+        node={selectedNode}
+        onUpdate={patch => onUpdateNode(selectedNode.key, patch)}
+      />
+      {questionsEnabled && (
+        <QuestionsPanel
+          node={selectedNode}
+          nodes={nodes}
+          edges={edges}
+          goal={goal ?? null}
+          onEditGoal={onEditGoal ?? (() => {})}
+        />
+      )}
+    </>
+  ) : selectedEdge ? (
+    <RelationshipInspector
+      edge={selectedEdge}
+      fromNode={nodes.find(n => n.key === selectedEdge.from)}
+      toNode={nodes.find(n => n.key === selectedEdge.to)}
+      onUpdate={patch => onUpdateEdge(selectedEdge.id, patch)}
+      onEnsureField={(nodeKey, fieldName) => {
+        const node = nodes.find(n => n.key === nodeKey);
+        if (!node || !fieldName || node.schema.some(f => f.name === fieldName)) return;
+        // Match the type of the field on the other side of the join so a key
+        // pointing at an INTEGER PK isn't created as STRING (OWOX rejects it).
+        const type = joinFieldType(nodes, [selectedEdge], nodeKey, fieldName);
+        onUpdateNode(nodeKey, { schema: [...node.schema, { name: fieldName, type, pk: false }] });
+      }}
+    />
+  ) : (
+    <EmptyState />
+  );
+
+  // Embedded: render only the body. The hosting ModelSheet provides the outer
+  // chrome (header, padding, overflow, close button), so we skip all of ours.
+  if (embedded) return body;
+
   if (!open) {
     return (
       <div className="relative flex-shrink-0" style={{ width: 0 }}>
@@ -157,40 +205,7 @@ export function Inspector({
 
       {/* Body */}
       <div className="px-4 py-4 overflow-y-auto flex-1 min-h-0">
-        {selectedNode ? (
-          <>
-            <ObjectInspector
-              node={selectedNode}
-              onUpdate={patch => onUpdateNode(selectedNode.key, patch)}
-            />
-            {questionsEnabled && (
-              <QuestionsPanel
-                node={selectedNode}
-                nodes={nodes}
-                edges={edges}
-                goal={goal ?? null}
-                onEditGoal={onEditGoal ?? (() => {})}
-              />
-            )}
-          </>
-        ) : selectedEdge ? (
-          <RelationshipInspector
-            edge={selectedEdge}
-            fromNode={nodes.find(n => n.key === selectedEdge.from)}
-            toNode={nodes.find(n => n.key === selectedEdge.to)}
-            onUpdate={patch => onUpdateEdge(selectedEdge.id, patch)}
-            onEnsureField={(nodeKey, fieldName) => {
-              const node = nodes.find(n => n.key === nodeKey);
-              if (!node || !fieldName || node.schema.some(f => f.name === fieldName)) return;
-              // Match the type of the field on the other side of the join so a key
-              // pointing at an INTEGER PK isn't created as STRING (OWOX rejects it).
-              const type = joinFieldType(nodes, [selectedEdge], nodeKey, fieldName);
-              onUpdateNode(nodeKey, { schema: [...node.schema, { name: fieldName, type, pk: false }] });
-            }}
-          />
-        ) : (
-          <EmptyState />
-        )}
+        {body}
       </div>
     </div>
   );

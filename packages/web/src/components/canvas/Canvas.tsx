@@ -44,7 +44,6 @@ import { isAuthRedirecting } from "../../lib/authRedirect";
 import { createModel, updateModel, createVersion } from "../../lib/models";
 import { AccountDialog } from "../AccountDialog";
 import { MyModelsDialog } from "../MyModelsDialog";
-import { ModelsRail } from "../ModelsRail";
 import { TopBar, type StorageOption } from "../TopBar";
 import { ImportDialog } from "../ImportDialog";
 import { OwoxImportDialog } from "../OwoxImportDialog";
@@ -64,6 +63,9 @@ import { RelEdge } from "./RelEdge";
 import { buildRfEdges, isEdgeReconnectable } from "./edges";
 import { erdAwareNodeSize } from "./layoutSize";
 import { Inspector } from "../inspector/Inspector";
+import { RightRail } from "../rail/RightRail";
+import { ModelSheet } from "../rail/ModelSheet";
+import { useRightPanel } from "../rail/useRightPanel";
 import { GoalDialog } from "../GoalDialog";
 import { loadGoal, persistGoal, type BusinessGoal } from "../../state/goal";
 
@@ -167,6 +169,12 @@ type Selection =
   | { type: "edge"; id: string }
   | null;
 
+// Titles shown in the right Sheet header per active panel.
+const SHEET_TITLES: Record<NonNullable<ReturnType<typeof useRightPanel>["active"]>, string> = {
+  inspect: "Inspect", models: "My Models", history: "Version history",
+  share: "Share model", enable: "Enable Model Canvas", account: "Account",
+};
+
 // ── Inner canvas (needs ReactFlowProvider context) ────────────────────────────
 const nodeTypes = { mart: MartNode };
 const edgeTypes = { rel: RelEdge };
@@ -179,6 +187,10 @@ function CanvasInner() {
   const [layoutAnimating, setLayoutAnimating] = useState(false);
 
   const [selection, setSelection] = useState<Selection>(null);
+  // Single right-side panel state (which rail entry is open in the Sheet).
+  const panel = useRightPanel();
+  // Selecting a node/edge auto-opens the Inspect panel — preserves current UX.
+  useEffect(() => { if (selection) panel.open("inspect"); }, [selection]); // eslint-disable-line react-hooks/exhaustive-deps
   const [goal, setGoalState] = useState<BusinessGoal | null>(loadGoal());
   const [showGoal, setShowGoal] = useState(false);
   // Niche guessed from the last template loaded — pre-fills the Business Goal
@@ -781,20 +793,6 @@ function CanvasInner() {
       )}
 
       <div className="flex flex-1 min-h-0 relative">
-        {/* Models + version-history rail (collapsed by default) */}
-        {supabaseEnabled && (
-          <ModelsRail
-            signedIn={!!account}
-            currentModelId={savedModelId}
-            versionsBump={versionsBump}
-            onOpenModel={handleOpenSaved}
-            onNew={handleNewModel}
-            onRestore={handleRestoreVersion}
-            getCurrentGraph={() => store.get()}
-            onSignIn={() => setShowAccount(true)}
-          />
-        )}
-
         {/* React Flow canvas */}
         <div
           className={`flex-1 relative ${canvasClass}`}
@@ -878,18 +876,29 @@ function CanvasInner() {
           )}
         </div>
 
-        {/* Right inspector drawer */}
-        <Inspector
-          selection={selection}
-          nodes={graph.nodes}
-          edges={graph.edges}
-          onUpdateNode={store.updateNode}
-          onUpdateEdge={store.updateEdge}
-          onClose={() => setSelection(null)}
-          goal={goal}
-          questionsEnabled={questionsEnabled}
-          onEditGoal={() => setShowGoal(true)}
-        />
+        {/* Right region: a unified Sheet hosting the active panel + the always-on icon rail */}
+        <ModelSheet
+          active={panel.active}
+          title={SHEET_TITLES[panel.active ?? "inspect"]}
+          onClose={() => { const wasInspect = panel.active === "inspect"; panel.close(); if (wasInspect) setSelection(null); }}
+        >
+          {panel.active === "inspect" && (
+            <Inspector
+              selection={selection}
+              nodes={graph.nodes}
+              edges={graph.edges}
+              onUpdateNode={store.updateNode}
+              onUpdateEdge={store.updateEdge}
+              onClose={() => { setSelection(null); panel.close(); }}
+              goal={goal}
+              questionsEnabled={questionsEnabled}
+              onEditGoal={() => setShowGoal(true)}
+              embedded
+            />
+          )}
+          {/* models / history / share panels added in Tasks 3–6 */}
+        </ModelSheet>
+        <RightRail active={panel.active} onOpen={panel.open} signedIn={!!account} />
       </div>
     </div>
   );
