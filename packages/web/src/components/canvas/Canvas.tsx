@@ -41,7 +41,7 @@ import { useAuth } from "../../lib/auth";
 import { useAccount } from "../../lib/account";
 import { supabaseEnabled } from "../../lib/supabase";
 import { isAuthRedirecting } from "../../lib/authRedirect";
-import { createModel, updateModel, createVersion } from "../../lib/models";
+import { createModel, updateModel, createVersion, listModels, loadModel, deleteModel, type SavedModel } from "../../lib/models";
 import { AccountDialog } from "../AccountDialog";
 import { MyModelsDialog } from "../MyModelsDialog";
 import { TopBar, type StorageOption } from "../TopBar";
@@ -68,6 +68,7 @@ import { ModelSheet } from "../rail/ModelSheet";
 import { useRightPanel, type RightPanelId } from "../rail/useRightPanel";
 import { EnablePanel } from "../rail/EnablePanel";
 import { AccountPanel } from "../rail/AccountPanel";
+import { MyModelsPanel } from "../rail/MyModelsPanel";
 import { GoalDialog } from "../GoalDialog";
 import { loadGoal, persistGoal, type BusinessGoal } from "../../state/goal";
 
@@ -238,12 +239,20 @@ function CanvasInner() {
   const { user: account, signOut: accountSignOut, signInWithGoogle, signInWithGitHub, signInWithEmail } = useAccount();
   // Clear the gated highlight once the user signs in so the stale icon doesn't persist.
   useEffect(() => { if (account) setVisualRailId(null); }, [account]);
+  // Load the saved models list whenever the My Models panel becomes active.
+  useEffect(() => {
+    if (panel.active === "models" && account) {
+      listModels().then(setSavedModels).catch(() => {});
+    }
+  }, [panel.active, account]);
   const [showAccount, setShowAccount] = useState(false);
   const [showMyModels, setShowMyModels] = useState(false);
   const [saving, setSaving] = useState(false);
   // The id of the saved model currently open (so Save updates it instead of
   // creating a duplicate). Reset on Clear / opening a different model.
   const [savedModelId, setSavedModelId] = useState<string | null>(null);
+  // List of the user's saved models — populated when the My Models panel opens.
+  const [savedModels, setSavedModels] = useState<SavedModel[]>([]);
   // Bumped on each save so the History rail re-fetches the version list.
   const [versionsBump, setVersionsBump] = useState(0);
   // Snapshot of the graph (JSON) as it was at the last Save / open — the baseline
@@ -563,6 +572,43 @@ function CanvasInner() {
     setModelName(name);
     setSavedSnapshot(JSON.stringify(g)); // baseline = the opened model as-is
   }, []);
+
+  // Open a saved model by id from the My Models panel (loads the graph, then hands
+  // off to handleOpenSaved which sets the Canvas state).
+  const handleOpenModelById = useCallback(async (id: string) => {
+    try {
+      const g = await loadModel(id);
+      const m = savedModels.find(m => m.id === id);
+      handleOpenSaved(g, id, m?.name ?? "");
+      panel.close();
+    } catch (e) {
+      setShareToast(`Open failed: ${(e as Error).message}`);
+    }
+  }, [savedModels, handleOpenSaved, panel]);
+
+  // Rename a saved model. Also updates `modelName` when renaming the current
+  // model, which keeps the top-bar name (and Enable-control subtext) in sync.
+  const handleRenameModel = useCallback(async (id: string, name: string) => {
+    try {
+      await updateModel(id, { name });
+      if (id === savedModelId) setModelName(name);
+      setSavedModels(await listModels());
+    } catch (e) {
+      setShareToast(`Rename failed: ${(e as Error).message}`);
+    }
+  }, [savedModelId]);
+
+  // Delete a saved model and refresh the list. If it was the open model, detach
+  // the canvas from the deleted record so the next Save creates a new one.
+  const handleDeleteModel = useCallback(async (id: string) => {
+    try {
+      await deleteModel(id);
+      if (id === savedModelId) setSavedModelId(null);
+      setSavedModels(await listModels());
+    } catch (e) {
+      setShareToast(`Delete failed: ${(e as Error).message}`);
+    }
+  }, [savedModelId]);
 
   // Restore a past version onto the canvas. Keep it the same open model (don't
   // touch savedModelId/name) — the next Save snapshots this restored state as a
@@ -932,11 +978,21 @@ function CanvasInner() {
           {panel.active === "account" && account && (
             <AccountPanel
               email={account.email ?? ""}
-              onMyModels={() => { setShowMyModels(true); panel.close(); }}
+              onMyModels={() => panel.open("models")}
               onSignOut={() => { void accountSignOut(); setSavedModelId(null); panel.close(); }}
             />
           )}
-          {/* share / models / history panels added in Tasks 4–6 */}
+          {panel.active === "models" && account && (
+            <MyModelsPanel
+              models={savedModels}
+              currentModelId={savedModelId}
+              onOpen={id => void handleOpenModelById(id)}
+              onNew={() => { handleNewModel(); panel.close(); }}
+              onRename={(id, name) => void handleRenameModel(id, name)}
+              onDelete={id => void handleDeleteModel(id)}
+            />
+          )}
+          {/* share / history panels added in Tasks 5–6 */}
         </ModelSheet>
         <RightRail active={panel.active} onOpen={handleRailOpen} signedIn={!!account} highlightId={visualRailId} />
       </div>
