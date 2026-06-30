@@ -37,4 +37,18 @@ describe("RightRail", () => {
     ["Inspect", "My Models", "Share"].forEach(l =>
       expect(screen.getByRole("button", { name: l }).getAttribute("aria-current")).toBeNull());
   });
+
+  it("renders a Save action that fires onSave", () => {
+    const onSave = vi.fn();
+    render(<RightRail active={null} onOpen={() => {}} signedIn onSave={onSave} saveState="saved" />);
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(onSave).toHaveBeenCalledTimes(1);
+  });
+
+  it("tints Save amber and disables it while saving", () => {
+    const { rerender } = render(<RightRail active={null} onOpen={() => {}} signedIn onSave={() => {}} saveState="unsaved" />);
+    expect(screen.getByRole("button", { name: "Save" }).className).toMatch(/text-amber-600/);
+    rerender(<RightRail active={null} onOpen={() => {}} signedIn onSave={() => {}} saving saveState="unsaved" />);
+    expect((screen.getByRole("button", { name: "Save" }) as HTMLButtonElement).disabled).toBe(true);
+  });
 });

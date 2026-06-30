@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { PanelRight, Clock, Share2 } from "lucide-react";
+import { PanelRight, Clock, Share2, Save } from "lucide-react";
 import type { RightPanelId } from "./useRightPanel";
 
 const ModelsGlyph = ({ size = 20 }: { size?: number }) => (
@@ -17,35 +17,54 @@ const ModelsGlyph = ({ size = 20 }: { size?: number }) => (
   </svg>
 );
 
-const ITEMS: { id: RightPanelId; label: string; icon: ReactNode }[] = [
+type Item = { id: RightPanelId; label: string; icon: ReactNode };
+
+// Save sits second-to-last, History last (per design). The rest precede them.
+const TOP_ITEMS: Item[] = [
   { id: "inspect", label: "Inspect", icon: <PanelRight size={20} /> },
   { id: "models", label: "My Models", icon: <ModelsGlyph /> },
-  { id: "history", label: "History", icon: <Clock size={20} /> },
   { id: "share", label: "Share", icon: <Share2 size={20} /> },
 ];
+const HISTORY_ITEM: Item = { id: "history", label: "History", icon: <Clock size={20} /> };
 
-export function RightRail({ active, onOpen, signedIn, highlightId }: {
+const railBtn = (on: boolean) =>
+  `w-full flex flex-col items-center gap-1 py-[9px] px-1 rounded-lg text-[11px] font-medium border ${
+    on ? "bg-white text-slate-900 shadow-[0_1px_3px_rgba(15,23,42,0.08)] border-[#d8dee8]"
+       : "border-transparent text-slate-500 hover:bg-[#f1f3f7] hover:text-slate-900"}`;
+
+export function RightRail({ active, onOpen, signedIn, highlightId, onSave, saving, saveState }: {
   active: RightPanelId | null; onOpen: (id: RightPanelId) => void; signedIn: boolean;
   highlightId?: RightPanelId | null;
+  onSave?: () => void; saving?: boolean; saveState?: "saved" | "unsaved" | null;
 }) {
   void signedIn; // reserved for sign-in-gated affordances in later tasks
+  const renderPanel = (it: Item) => {
+    const on = it.id === (highlightId ?? active);
+    return (
+      <button key={it.id} onClick={() => onOpen(it.id)} aria-current={on ? "true" : undefined} className={railBtn(on)}>
+        {it.icon}{it.label}
+      </button>
+    );
+  };
+  const unsaved = saveState === "unsaved";
   return (
     <nav className="w-[60px] flex-shrink-0 border-l border-[#d8dee8] bg-[#fafafa] flex flex-col items-center gap-1 py-[14px] px-[4px] z-20">
-      {ITEMS.map(it => {
-        const on = it.id === (highlightId ?? active);
-        return (
-          <button
-            key={it.id}
-            onClick={() => onOpen(it.id)}
-            aria-current={on ? "true" : undefined}
-            className={`w-full flex flex-col items-center gap-1 py-[9px] px-1 rounded-lg text-[11px] font-medium border ${
-              on ? "bg-white text-slate-900 shadow-[0_1px_3px_rgba(15,23,42,0.08)] border-[#d8dee8]"
-                 : "border-transparent text-slate-500 hover:bg-[#f1f3f7] hover:text-slate-900"}`}
-          >
-            {it.icon}{it.label}
-          </button>
-        );
-      })}
+      {TOP_ITEMS.map(renderPanel)}
+
+      {/* Save — an action (not a panel). Orange when there are unsaved changes. */}
+      <button
+        onClick={onSave}
+        disabled={saving}
+        aria-label="Save"
+        title={unsaved ? "Unsaved changes — click to save" : "Save"}
+        className={`relative w-full flex flex-col items-center gap-1 py-[9px] px-1 rounded-lg text-[11px] font-medium border border-transparent disabled:opacity-60 ${
+          unsaved ? "text-amber-600 hover:bg-amber-50" : "text-slate-500 hover:bg-[#f1f3f7] hover:text-slate-900"}`}
+      >
+        {unsaved && <span className="absolute top-[6px] right-[10px] h-[7px] w-[7px] rounded-full bg-amber-500" />}
+        <Save size={20} />{saving ? "Saving…" : "Save"}
+      </button>
+
+      {renderPanel(HISTORY_ITEM)}
     </nav>
   );
 }

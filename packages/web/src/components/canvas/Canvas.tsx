@@ -797,9 +797,6 @@ function CanvasInner() {
         modelName={modelName}
         supabaseEnabled={supabaseEnabled}
         accountEmail={account?.email ?? null}
-        onSave={handleSave}
-        saving={saving}
-        saveState={saveState}
         onEnable={handleEnable}
       />
       {shareToast && <ShareToast message={shareToast} onClose={() => setShareToast(null)} />}
@@ -1054,7 +1051,7 @@ function CanvasInner() {
             />
           )}
         </ModelSheet>
-        <RightRail active={panel.active} onOpen={handleRailOpen} signedIn={!!account} highlightId={visualRailId} />
+        <RightRail active={panel.active} onOpen={handleRailOpen} signedIn={!!account} highlightId={visualRailId} onSave={supabaseEnabled ? handleSave : undefined} saving={saving} saveState={saveState} />
       </div>
     </div>
   );
