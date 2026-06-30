@@ -191,8 +191,11 @@ function CanvasInner() {
   const [selection, setSelection] = useState<Selection>(null);
   // Single right-side panel state (which rail entry is open in the Sheet).
   const panel = useRightPanel();
+  // Tracks the visually-highlighted rail icon independently from panel.active so
+  // that a gated redirect (models/history → "enable") still lights the clicked icon.
+  const [visualRailId, setVisualRailId] = useState<RightPanelId | null>(null);
   // Selecting a node/edge auto-opens the Inspect panel — preserves current UX.
-  useEffect(() => { if (selection) panel.open("inspect"); }, [selection]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (selection) { panel.open("inspect"); setVisualRailId("inspect"); } }, [selection]); // eslint-disable-line react-hooks/exhaustive-deps
   const [goal, setGoalState] = useState<BusinessGoal | null>(loadGoal());
   const [showGoal, setShowGoal] = useState(false);
   // Niche guessed from the last template loaded — pre-fills the Business Goal
@@ -233,6 +236,8 @@ function CanvasInner() {
   const { me, connect, signOut } = useAuth();
   // Supabase account ("Save your model") — independent of the OWOX connect above.
   const { user: account, signOut: accountSignOut, signInWithGoogle, signInWithGitHub, signInWithEmail } = useAccount();
+  // Clear the gated highlight once the user signs in so the stale icon doesn't persist.
+  useEffect(() => { if (account) setVisualRailId(null); }, [account]);
   const [showAccount, setShowAccount] = useState(false);
   const [showMyModels, setShowMyModels] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -586,9 +591,10 @@ function CanvasInner() {
   }, [account, panel]);
 
   // Rail open with gating: models/history require a Supabase account; redirect to
-  // the Enable panel when signed out so the user can create one. The clicked icon's
-  // visual intent is preserved by routing through the same panel.open path.
+  // the Enable panel when signed out so the user can create one. The clicked icon
+  // stays highlighted via visualRailId regardless of where panel.active routes to.
   const handleRailOpen = useCallback((id: RightPanelId) => {
+    setVisualRailId(id);
     if ((id === "models" || id === "history") && !account) {
       panel.open("enable");
     } else {
@@ -900,7 +906,7 @@ function CanvasInner() {
         <ModelSheet
           active={panel.active}
           title={SHEET_TITLES[panel.active ?? "inspect"]}
-          onClose={() => { const wasInspect = panel.active === "inspect"; panel.close(); if (wasInspect) setSelection(null); }}
+          onClose={() => { const wasInspect = panel.active === "inspect"; panel.close(); if (wasInspect) setSelection(null); setVisualRailId(null); }}
         >
           {panel.active === "inspect" && (
             <Inspector
@@ -932,7 +938,7 @@ function CanvasInner() {
           )}
           {/* share / models / history panels added in Tasks 4–6 */}
         </ModelSheet>
-        <RightRail active={panel.active} onOpen={handleRailOpen} signedIn={!!account} />
+        <RightRail active={panel.active} onOpen={handleRailOpen} signedIn={!!account} highlightId={visualRailId} />
       </div>
     </div>
   );

@@ -20,4 +20,21 @@ describe("RightRail", () => {
     render(<RightRail active="models" onOpen={() => {}} signedIn={true} />);
     expect(screen.getByRole("button", { name: "My Models" }).getAttribute("aria-current")).toBe("true");
   });
+
+  it("highlights the icon from highlightId even when active is a different panel (gated redirect case)", () => {
+    // Simulates: signed-out user clicks "My Models" → panel routes to "enable",
+    // but highlightId="models" keeps the My Models icon highlighted.
+    render(<RightRail active="enable" onOpen={() => {}} signedIn={false} highlightId="models" />);
+    expect(screen.getByRole("button", { name: "My Models" }).getAttribute("aria-current")).toBe("true");
+    // No other rail icon should be highlighted
+    ["Inspect", "History", "Share"].forEach(l =>
+      expect(screen.getByRole("button", { name: l }).getAttribute("aria-current")).toBeNull());
+  });
+
+  it("highlights the icon from highlightId even when active is a different panel (gated redirect case, history)", () => {
+    render(<RightRail active="enable" onOpen={() => {}} signedIn={false} highlightId="history" />);
+    expect(screen.getByRole("button", { name: "History" }).getAttribute("aria-current")).toBe("true");
+    ["Inspect", "My Models", "Share"].forEach(l =>
+      expect(screen.getByRole("button", { name: l }).getAttribute("aria-current")).toBeNull());
+  });
 });
