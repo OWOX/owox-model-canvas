@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Save, Clock } from "lucide-react";
+import { Save, Clock, Layers } from "lucide-react";
 
 // SVGs reused from AccountDialog.tsx
 function GoogleMark() {
@@ -32,6 +32,11 @@ const PERKS = [
     title: "Version history",
     desc: "See changes over time and restore any version",
   },
+  {
+    icon: <Layers size={16} />,
+    title: "Multiple models",
+    desc: "Keep several models and switch between them",
+  },
 ];
 
 export function EnablePanel({
@@ -47,13 +52,12 @@ export function EnablePanel({
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Intro copy — verbatim per spec */}
+      {/* Intro copy — concise, friendly, honest about the email opt-in. */}
       <p className="text-[13px] leading-relaxed text-slate-600">
-        Enable saves and version history by creating a free account. It&apos;s
-        completely free — we just need to verify you&apos;re a real person before
-        unlocking these advanced capabilities. And — being honest — we&apos;ll
-        occasionally email you about data-modeling topics. (Unsubscribe anytime,
-        no hard feelings.)
+        Unlock extra capabilities with a free account. It&apos;s free — we just
+        need to verify you&apos;re a real person. And, honestly, we&apos;ll
+        occasionally email you about data-modeling topics (unsubscribe anytime —
+        no hard feelings).
       </p>
 
       {/* Perk rows — descriptive only, NOT interactive */}
